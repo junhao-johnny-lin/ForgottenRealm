@@ -15,6 +15,8 @@ find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Core)
 add_executable(test1
   main.cpp
   map.h map.cpp
+  location.h
+  location.cpp
 )
 target_link_libraries(test1 Qt${QT_VERSION_MAJOR}::Core)
 
