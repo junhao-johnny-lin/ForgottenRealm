@@ -5,7 +5,7 @@ using namespace std;
 
 void initializeLocations(GameMap& map) {
     // Picta sublocatie
-    map.locations["Drowned Forest"] = {"Drowned Forest", 10, 0};
+    map.locations["Drowned_Forest"] = {"Drowned_Forest", 10, 0};
 
     // Hibernia
     map.locations["Hibernia"]       = {"HIBERNIA", 11, 0};
