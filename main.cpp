@@ -24,7 +24,27 @@ int main() {
      getline(cin >> ws, keuze); // ws = skip leading whitespace
     myMap.setHeroLocation(keuze);
 
-    myMap.draw();
+     // Game-loop
+     while (true) {
+         // Toon kaart met huidige marker
+         myMap.draw();
 
+         // Toon huidige locatie
+         if (!myMap.getHeroLocation().empty()) {
+             cout << "Je huidige locatie is: " << myMap.getHeroLocation() << "\n";
+         }
+
+         // Vraag nieuwe bestemming
+         cout << "\nTyp een nieuwe locatie, 'map' om de kaart opnieuw te zien, of 'stop' om te stoppen:\n";
+         getline(cin >> ws, keuze);
+
+         if (keuze == "stop") break;
+         if (keuze == "map") {
+             continue; // kaart wordt toch al getoond aan het begin van de loop
+         }
+
+         // Verplaats held
+         myMap.setHeroLocation(keuze);
+     }
     return 0;
 }

@@ -17,7 +17,7 @@ void GameMap::setHeroLocation(const string& locNameRaw) {
     locName.erase(remove_if(locName.begin(), locName.end(), ::isspace), locName.end());
     transform(locName.begin(), locName.end(), locName.begin(), ::tolower);
 
-    if (locName == "3 Step Pass" || locName == "3steppass") {
+    if ( locName == "3steppass") {
         int keuze = 0;
         while (true) {
             cout << "\nJe bent aangekomen bij 3 Step Pass.\n";
@@ -40,7 +40,51 @@ void GameMap::setHeroLocation(const string& locNameRaw) {
         }
         return;
     }
+    // Keuze voor Forest
+    if (locName == "forest") {
+        int keuze = 0;
+        while (true) {
+            cout << "\nJe bedoelt:\n";
+            cout << "  1. Forest (Araluen)\n";
+            cout << "  2. Drowned Forest (Picta)\n";
+            cout << "Maak je keuze (1-2): ";
 
+            if (cin >> keuze && keuze >= 1 && keuze <= 2) break;
+            cout << "Ongeldige invoer. Probeer opnieuw.\n";
+            cin.clear();
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+        }
+
+        switch (keuze) {
+        case 1: heroLocationName = "Forest(Araluen)"; break;
+        case 2: heroLocationName = "Drowned_Forest"; break; // let op: exact zoals in je ASCII-kaart
+        }
+        return;
+    }
+
+    // Keuze voor mountains
+    if (locName == "mountains") {
+        int keuze = 0;
+        while (true) {
+            cout << "\nJe bedoelt:\n";
+            cout << "  1. mountains (Araluen)\n";
+            cout << "  2. mountains(Plateau)\n";
+            cout << "Maak je keuze (1-2): ";
+
+            if (cin >> keuze && keuze >= 1 && keuze <= 2) break;
+            cout << "Ongeldige invoer. Probeer opnieuw.\n";
+            cin.clear();
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+        }
+
+        switch (keuze) {
+        case 1: heroLocationName = "Mountains "; break;
+        case 2: heroLocationName = "Mountains (Plateau) "; break; // let op: exact zoals in je ASCII-kaart
+        }
+        return;
+    }
+
+    // Algemene matching
     for (const auto& [key, loc] : locations) {
         string keyNorm = key;
         keyNorm.erase(remove_if(keyNorm.begin(), keyNorm.end(), ::isspace), keyNorm.end());
@@ -53,7 +97,7 @@ void GameMap::setHeroLocation(const string& locNameRaw) {
     }
 
     cout << "Onbekende locatie. Je start in Araluen.\n";
-    heroLocationName = "Araluen";
+    heroLocationName = "Araluen ";
 }
 void GameMap::draw() const {
     vector<string> map = {
@@ -64,27 +108,27 @@ void GameMap::draw() const {
         "│   ┌─────────────────┐                                                                   │",
         "│   │     PICTA       │                                                                   │",
         "│   │    (NOORDEN)    │                                                                   │",
-        "│   │  Drowned_Forest │                                                                   │",
+        "│   │ Drowned_Forest  │                                                                   │",
         "│   └─────────────────┘                                                                   │",
         "│                                                                                         │",
-        "│  ┌─────────┐        ┌────────────────────────────────────────────────┐                  │",
-        "│  │         │        │                  ARALUEN                       │                  │",
-        "│  │HIBERNIA │        │                 (CENTRAAL)                     │                  │",
-        "│  │         │        │  Norgate                    Caraway            │                  │",
-        "│  └─────────┘        │  Forest        Araluen      Hackham            │                  │",
-        "│                     │  Redmont       Gorlan                          │                  │",
-        "│                     │                           Thomtree  Seacliff   │                  │",
-        "│                     │Western_World  Mountains  Uthal_Plain  The_Fens │                  │",
-        "│                     │         Solitary Plain   3 Step Pass (Araluen) │                  │",
-        "│                     └────────────────────────────────────────────────┘                  │",
+        "│  ┌─────────┐        ┌────────────────────────────────────────────────────┐              │",
+        "│  │         │        │                  ARALUEN                           │              │",
+        "│  │HIBERNIA │        │                 (CENTRAAL)                         │              │",
+        "│  │         │        │  Norgate                    Caraway                │              │",
+        "│  └─────────┘        │Forest(Araluen)  Araluen     Hackham                │              │",
+        "│                     │  Redmont       Gorlan                              │              │",
+        "│                     │                           Thomtree  Seacliff       │              │",
+        "│                     │Western_World   Mountains   Uthal_Plain   The_Fens  │              │",
+        "│                     │         Solitary Plain   3 Step Pass (Araluen)     │              │",
+        "│                     └────────────────────────────────────────────────────┘              │",
         "│                                                                                         │",
-        "│   ┌──────────────────────┐                              ┌─────────────────────┐         │",
-        "│   │     CELTICA          │                              │  MORGARATH'S        │         │",
-        "│   │   (ZUIDWEST)         │                              │    PLATEAU          │         │",
-        "│   │   Villages           │                              │3 Step Pass (Plateau)│         │",
-        "│   │3 Step Pass (Celtica) │                              │  Mountains          │         │",
-        "│   └──────────────────────┘                              │  South Cliffs       │         │",
-        "│                                                         └─────────────────────┘         │",
+        "│   ┌──────────────────────┐                              ┌──────────────────────┐        │",
+        "│   │     CELTICA          │                              │  MORGARATH'S         │        │",
+        "│   │   (ZUIDWEST)         │                              │    PLATEAU           │        │",
+        "│   │   Villages           │                              │3 Step Pass (Plateau) │        │",
+        "│   │3 Step Pass (Celtica) │                              │ Mountains (Plateau)  │        │",
+        "│   └──────────────────────┘                              │  South Cliffs        │        │",
+        "│                                                         └──────────────────────┘        │",
         "│                                                                                         │",
         "│                                       N                                                 │",
         "│                                       ↑                                                 │",
