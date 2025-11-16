@@ -67,16 +67,16 @@ void GameMap::draw() const {
         "│   │  Drowned Forest │                                                                   │",
         "│   └─────────────────┘                                                                   │",
         "│                                                                                         │",
-        "│  ┌────────┐        ┌───────────────────────────────────────────────┐                    │",
-        "│  │        │        │                  ARALUEN                      │                    │",
-        "│  │HIBERNIA│        │                 (CENTRAAL)                    │                    │",
-        "│  │        │        │  Norgate                    Caraway           │                    │",
-        "│  └────────┘        │  Forest        Araluen      Hackham           │                    │",
-        "│                    │  Redmont       Gorlan                         │                    │",
-        "│                    │                           Thomtree  Seacliff  │                    │",
-        "│                    │ Western_World  Mountains Uthal_Plain The_Fens │                    │",
-        "│                    │         Solitary Plain   3 Step Pass          │                    │",
-        "│                    └───────────────────────────────────────────────┘                    │",
+        "│  ┌─────────┐        ┌────────────────────────────────────────────────┐                  │",
+        "│  │         │        │                  ARALUEN                       │                  │",
+        "│  │HIBERNIA │        │                 (CENTRAAL)                     │                  │",
+        "│  │         │        │  Norgate                    Caraway            │                  │",
+        "│  └─────────┘        │  Forest        Araluen      Hackham            │                  │",
+        "│                     │  Redmont       Gorlan                          │                  │",
+        "│                     │                           Thomtree  Seacliff   │                  │",
+        "│                     │Western_World  Mountains  Uthal_Plain  The_Fens │                  │",
+        "│                     │         Solitary Plain   3 Step Pass           │                  │",
+        "│                     └────────────────────────────────────────────────┘                  │",
         "│                                                                                         │",
         "│   ┌─────────────────┐                                        ┌─────────────────────┐    │",
         "│   │     CELTICA     │                                        │  MORGARATH'S        │    │",
@@ -95,13 +95,17 @@ void GameMap::draw() const {
     };
 
     if (!heroLocationName.empty()) {
+
         for (auto& line : map) {
             size_t pos = line.find(heroLocationName);
             if (pos != string::npos) {
-                size_t x = pos + heroLocationName.length();
-                while (x < line.size() && line[x] != ' ') ++x;
-                if (x < line.size()) {
-                    line.insert(x, " X");
+                size_t after = pos + heroLocationName.length();
+                // als er een spatie direct na de naam staat → vervang die door " X"
+                if (after < line.size() && line[after] == ' ') {
+                    line.replace(after, 1, "X");
+                } else {
+                    // anders gewoon " X" toevoegen
+                    line.insert(after, " X");
                 }
                 break;
             }

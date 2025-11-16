@@ -8,7 +8,7 @@ void initializeLocations(GameMap& map) {
     map.locations["Drowned Forest"] = {"Drowned Forest", 10, 0};
 
     // Hibernia
-    map.locations["Hibernia"]       = {"Hibernia", 11, 0};
+    map.locations["Hibernia"]       = {"HIBERNIA", 11, 0};
 
     // Araluen blok
     map.locations["Norgate"]        = {"Norgate", 12, 0};
