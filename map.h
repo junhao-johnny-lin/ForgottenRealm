@@ -20,8 +20,6 @@ public:
     friend void initializeLocations(GameMap& map);
 
 private:
-    int heroX;                  // Heldpositie X
-    int heroY;                  // Heldpositie Y
     std::string heroLocationName;
     std::map<std::string, Location> locations; // Bekende locaties met coördinaten
 };

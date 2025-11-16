@@ -21,7 +21,7 @@ int main() {
 
     cout << "\nWaar wil je starten?\n";
     string keuze;
-    getline(cin, keuze);
+     getline(cin >> ws, keuze); // ws = skip leading whitespace
     myMap.setHeroLocation(keuze);
 
     myMap.draw();
