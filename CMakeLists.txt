@@ -14,9 +14,19 @@ find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Core)
 
 add_executable(test1
   main.cpp
-  map.h map.cpp
-  location.h
-  location.cpp
+  map_old.h map_old.cpp
+  location_old.h
+  location_old.cpp
+  game.h game.cpp
+  player.h player.cpp
+  map_renderer.h map_renderer.cpp
+  enemy.h enemy.cpp
+  items.h items.cpp
+  battle.h battle.cpp
+  achievements.h achievements.cpp
+  skills.h skills.cpp
+  class_skills.h class_skills.cpp
+  save.h save.cpp
 )
 target_link_libraries(test1 Qt${QT_VERSION_MAJOR}::Core)
 
@@ -25,3 +35,6 @@ install(TARGETS test1
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 )
+
+
+

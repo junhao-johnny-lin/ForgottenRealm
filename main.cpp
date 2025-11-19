@@ -1,7 +1,7 @@
-#include <iostream>
-#include "map.h"
-#include <string>
-
+//#include <iostream>
+//#include "map_old.h"
+//#include <string>
+#include "game.h"
 
 #ifdef _WIN32
 #include <windows.h>
@@ -15,36 +15,7 @@ int main() {
     SetConsoleCP(CP_UTF8);
 #endif
 
-    GameMap myMap;
-    cout << "Dit is de wereldkaart van Araluen:\n\n";
-    myMap.draw();
-
-    cout << "\nWaar wil je starten?\n";
-    string keuze;
-     getline(cin >> ws, keuze); // ws = skip leading whitespace
-    myMap.setHeroLocation(keuze);
-
-     // Game-loop
-     while (true) {
-         // Toon kaart met huidige marker
-         myMap.draw();
-
-         // Toon huidige locatie
-         if (!myMap.getHeroLocation().empty()) {
-             cout << "Je huidige locatie is: " << myMap.getHeroLocation() << "\n";
-         }
-
-         // Vraag nieuwe bestemming
-         cout << "\nTyp een nieuwe locatie, 'map' om de kaart opnieuw te zien, of 'stop' om te stoppen:\n";
-         getline(cin >> ws, keuze);
-
-         if (keuze == "stop") break;
-         if (keuze == "map") {
-             continue; // kaart wordt toch al getoond aan het begin van de loop
-         }
-
-         // Verplaats held
-         myMap.setHeroLocation(keuze);
-     }
+    Game g;
+    g.runLoop();
     return 0;
 }
