@@ -1,36 +1,28 @@
+// game.h
 #pragma once
 #include <string>
-#include <unordered_map>
 #include <vector>
-#include "map_renderer.h"
-#include "player.h"
-#include "dungeon.h"
-#include "achievements.h"
-#include "map2.h"
+
+struct Achievement;
+struct Enemy;
+struct Mob;
+struct Potion;
+class PlayerState;
+class Weapon;
 
 class Game {
 public:
     Game();
-    void run();
-    // in Game { ... }
-    std::unordered_map<std::string, std::string> canonicalKeyByNormalized;
-    WorldMap map;
+    ~Game();
+
+    void initDefault();
+    void run(); // main loop
+
+    // accessors
+    const std::vector<Enemy>& enemies() const;
+    const std::vector<std::string>& achievements() const;
 
 private:
-    std::unordered_map<std::string, Location> nodes_;
-    std::unordered_map<std::string, Dungeon> dungeons_;
-    PlayerState player_;
-    std::vector<Achievement> achievements_;
-
-    void initWorld();
-    void runIntro();
-    void levelUpCmd();
-
-    // save/load
-    void saveCmd(const std::string& path);
-    void loadCmd(const std::string& path);
-
-    // dungeon
-    bool enterDungeon(const std::string& locationKey);
+    struct Impl;
+    Impl* pimpl_;
 };
-

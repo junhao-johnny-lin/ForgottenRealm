@@ -17,21 +17,40 @@ add_executable(test1
   map_old.h map_old.cpp
   location_old.h
   location_old.cpp
-  game.h game.cpp
-  player.h player.cpp
-  map_renderer.h map_renderer.cpp
-  enemy.h enemy.cpp
-  items.h items.cpp
-  battle.h battle.cpp
-  achievements.h achievements.cpp
-  skills.h skills.cpp
-  class_skills.h class_skills.cpp
-  save.h save.cpp
-  class_defs.h class_defs.cpp
-  dungeon.h dungeon.cpp
-  loot.h loot.cpp
-  trainer.h trainer.cpp
-  map2.h map2.cpp
+  entity.h entity.cpp
+  enums.h enums.cpp
+  item.h item.cpp
+  weapon.h weapon.cpp
+  armor.h armor.cpp
+  skills_1_2.h skills_1_2.cpp
+  trainer_1_2.h trainer_1_2.cpp
+  achievement_1_2.h achievement_1_2.cpp
+  enemy_1_2.h enemy_1_2.cpp
+  location_1_2.h location_1_2.cpp
+  dungeon_1_2.h dungeon_1_2.cpp
+  achievementsystem.h achievementsystem.cpp
+  gameworld.h gameworld.cpp
+  player_1_2.h player_1_2.cpp
+  gamemap.h gamemap.cpp
+  battleengine.h battleengine.cpp
+  savesystem.h savesystem.cpp
+  gameengine.h gameengine.cpp
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 )
 target_link_libraries(test1 Qt${QT_VERSION_MAJOR}::Core)
 

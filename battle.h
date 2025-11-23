@@ -1,32 +1,24 @@
+// battle.h
 #pragma once
+#include <string>
 #include <vector>
-#include <functional>
-#include <cstdint>
-#include "player.h"
-#include "enemy.h"
 
-enum class BattleOutcome { WIN, LOSE, FLEE };
+struct BattleEvent {
+    std::string description;
+};
 
-struct BattleEvent { std::string text; };
+struct Mob {
+    std::string id;
+    std::string name;
+    int hp = 0;
+    int attack = 0;
+    int defence = 0;
+};
 
 struct BattleResult {
-    BattleOutcome outcome = BattleOutcome::LOSE;
-    int xpGained = 0;
-    int reviveTokensGained = 0;
-    std::vector<std::string> itemDrops;
-    PlayerState finalPlayerState;
+    bool playerWon = false;
+    std::vector<std::string> loot; // item ids
     std::vector<BattleEvent> events;
 };
 
-using BattleEventCallback = std::function<void(const BattleEvent&)>;
-
-struct BattleContext {
-    bool allowFlee = true;
-    float xpMultiplier = 1.0f;
-};
-
-BattleResult runBattle(const PlayerState& player,
-                       const std::vector<Enemy>& enemies,
-                       const BattleContext& ctx = {},
-                       uint32_t seed = 0,
-                       BattleEventCallback cb = nullptr);
+BattleResult resolveBattle(const std::vector<Mob>& mobs, const std::string& playerClass, int& playerHp);

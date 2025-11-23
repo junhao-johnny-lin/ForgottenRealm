@@ -1,5 +1,5 @@
 // map.cpp
-#include "map_old.h"
+/*#include "map_old.h"
 #include "location_old.h"
 #include <iostream>
 #include <vector>
@@ -172,3 +172,4 @@ void GameMap::listAvailableLocations() const {
         cout << " - " << loc.name << '\n';
     }
 }
+*/

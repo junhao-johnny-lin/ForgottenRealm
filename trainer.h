@@ -1,7 +1,13 @@
+// trainer.h
 #pragma once
-#include <unordered_map>
 #include <string>
-#include "player.h"
-#include "class_defs.h"
+#include <vector>
 
-void openTrainer(PlayerState& player, const std::unordered_map<std::string, ClassDef>& classes);
+struct TrainerOffer {
+    std::string id;
+    std::string description;
+    int costSkillPoints = 0;
+    std::string unlocksSkillId;
+};
+
+std::vector<TrainerOffer> getDefaultTrainerOffers();

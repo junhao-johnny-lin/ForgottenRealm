@@ -1,17 +1,17 @@
+// save.h
 #pragma once
-#include <string>
-#include <unordered_map>
-#include <vector>
-#include "player.h"
-#include "map_renderer.h"
+#include "items.h"
+#include "loot.h"
 #include "achievements.h"
+#include <string>
+#include <vector>
 
-bool saveGame(const PlayerState& player,
-              const std::unordered_map<std::string, Location>& nodes,
-              const std::vector<Achievement>& achievements,
-              const std::string& path);
+bool saveGame(const std::string& path,
+              const std::vector<WeaponInstance>& weapons,
+              const std::vector<Potion>& potions,
+              const std::vector<Achievement>& achievements);
 
-bool loadGame(PlayerState& player,
-              std::unordered_map<std::string, Location>& nodes,
-              std::vector<Achievement>& achievements,
-              const std::string& path);
+bool loadGame(const std::string& path,
+              std::vector<WeaponInstance>& weapons,
+              std::vector<Potion>& potions,
+              std::vector<Achievement>& achievements);

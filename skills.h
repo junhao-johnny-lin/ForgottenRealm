@@ -1,12 +1,13 @@
+// skills.h
 #pragma once
 #include <string>
-#include <unordered_map>
+#include <vector>
 
-struct Skill {
+struct SkillDef {
+    std::string description;
     std::string id;
     std::string name;
-    std::string description;
-    int cost; // skill points
+    int cost = 0; // skill points
 };
 
-const std::unordered_map<std::string, Skill>& getTrainerSkills(); // optioneel
+std::vector<SkillDef> getAllSkills();

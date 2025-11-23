@@ -1,17 +1,18 @@
+// dungeon.cpp
 #include "dungeon.h"
-Dungeon makeDungeon(const std::string& id, const std::string& name, const std::string& entranceKey, int floors) {
+#include <algorithm>
+
+std::vector<Dungeon> getDefaultDungeons() {
+    std::vector<Dungeon> v;
     Dungeon d;
-    d.id = id;
-    d.name = name;
-    d.entranceKey = entranceKey;
-    d.floorsCount = floors;
-    for (int i = 1; i <= floors; ++i) {
-        DungeonFloor f;
-        f.floorIndex = i;
-        f.label = "Floor " + std::to_string(i);
-        f.encounterCount = 2 + (i - 1);
-        f.hasBoss = (i == floors);
-        d.floors.push_back(f);
-    }
-    return d;
+    d.id = "beginner_hall";
+    d.name = "Beginner Hall";
+    d.entranceKey = "d_begin_entrance";
+    d.floors = {
+        {0, "Floor 1", {"goblin","wolf"}},
+        {1, "Floor 2", {"orc","skeleton"}}
+    };
+    v.push_back(d);
+    std::sort(v.begin(), v.end(), [](const Dungeon& a, const Dungeon& b){ return a.id < b.id; });
+    return v;
 }

@@ -1,17 +1,21 @@
+// map_renderer.h
 #pragma once
 #include <string>
 #include <vector>
-#include <unordered_map>
 
-struct Location {
-    std::string label;
-    bool visited = false;
-    bool accessible = false;
-    bool hasTrainer = false;
-    bool hasCamp = false;
-    bool hasDungeon = false;
-    bool hasInn = false;
-    bool dungeonCleared = false;
+struct MapTile {
+    char glyph = ' ';
+    std::string locationKey;
 };
 
-void renderMap(const std::unordered_map<std::string, Location>& nodes);
+class MapRenderer {
+public:
+    MapRenderer() = default;
+    ~MapRenderer() = default;
+
+    void setMapSize(int width, int height);
+    void setHeroLocation(const std::string& locationKey);
+    void setAccessibleLocations(const std::vector<std::string>& keys);
+
+    std::vector<std::string> render() const;
+};

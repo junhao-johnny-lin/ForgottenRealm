@@ -1,5 +1,5 @@
 #include <iostream>
-#include "game.h"
+#include "GameEngine.h"
 
 #ifdef _WIN32
 #include <windows.h>
@@ -12,7 +12,9 @@ int main() {
     SetConsoleCP(CP_UTF8);
 #endif
 
-    Game g;
-    g.run();
+    std::cout << "Welkom bij het Adventure Eindproject (Console)\n";
+    Adventure::GameEngine engine;
+    engine.run();
+    std::cout << "Einde spel. Tot ziens.\n";
     return 0;
 }

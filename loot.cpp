@@ -1,50 +1,44 @@
+// loot.cpp
 #include "loot.h"
-#include "enemy.h"
-#include <random>
-#include <iostream>
+#include "items.h"
+#include <vector>
+#include <string>
 
-std::vector<std::string> generateLootForEnemy(const Enemy& enemy) {
-    std::vector<std::string> drops;
-    std::mt19937 rng(static_cast<unsigned int>(std::random_device{}()));
-    std::uniform_int_distribution<int> dist(1, 100);
-    int roll = dist(rng);
-
-    // Branch by category (int) for simple, fast checks.
-    // Change to string-based checks (enemy.id) if you prefer.
-    if (enemy.category == 0) {
-        if (roll <= 10) drops.push_back("common_gem");
-        if (roll <= 2)  drops.push_back("rare_fragment");
-    } else if (enemy.category == 1) {
-        if (roll <= 20) drops.push_back("coin_pouch");
-        if (roll <= 5)  drops.push_back("magic_rune");
-    } else {
-        if (roll <= 5) drops.push_back("strange_essence");
-    }
-    return drops;
+std::vector<std::string> generateLootForEnemy(const std::string& /*enemyId*/) {
+    return { "iron_sword" };
 }
 
-void applyLootItemToPlayer(PlayerState& player, const std::string& itemId) {
-    if (itemId == "common_gem") {
-        player.permAttackBoost += 1;
-        std::cout << "Je vond een common_gem: +1 permanent attack\n";
-    } else if (itemId == "rare_fragment") {
-        player.permHpBoost += 5;
-        player.maxHp += 5;
-        player.hp += 5;
-        std::cout << "Je vond een rare_fragment: +5 max HP\n";
-    } else if (itemId == "strange_essence") {
-        player.tempHpBoost += 5;
-        player.tempBuffBattlesRemaining = 3;
-        std::cout << "Je vond strange_essence: +5 temporary HP for 3 battles\n";
-    } else if (itemId == "magic_rune") {
-        player.permDefenceBoost += 1;
-        std::cout << "Je vond een magic_rune: +1 permanent defence\n";
-    } else if (itemId == "coin_pouch") {
-        std::cout << "Je vond een coin_pouch (purely cosmetic in this stub)\n";
-    } else {
-        std::cout << "Onbekend item: " << itemId << "\n";
+std::vector<Potion> convertWeaponToPotions(const std::string& weaponId, int tier, int /*durability*/) {
+    std::vector<Potion> out;
+    Rarity rarity = Rarity::Common;
+    auto it = getWeaponTiers().find(weaponId);
+    if (it != getWeaponTiers().end()) rarity = it->second.rarity;
+
+    int tempCount = 1;
+    bool perm = false;
+    switch (rarity) {
+    case Rarity::Common: tempCount = 1; break;
+    case Rarity::Uncommon: tempCount = 2; break;
+    case Rarity::Rare: tempCount = 3; break;
+    case Rarity::Epic: tempCount = 5; break;
+    case Rarity::Legendary: tempCount = 8; perm = true; break;
     }
 
-    // keep hp bounded by maxHp
-    if (player.hp > player.maxHp) player.hp = player.maxHp;
+    for (int i = 0; i < tempCount; ++i) {
+        Potion p;
+        p.id = "pot_temp_t" + std::to_string(tier);
+        p.name = "Temporary Potion (tier " + std::to_string(tier) + ")";
+        p.potency = std::max(1, tier);
+        p.permanent = false;
+        out.push_back(p);
+    }
+    if (perm) {
+        Potion p;
+        p.id = "pot_perm_t" + std::to_string(tier);
+        p.name = "Permanent Potion (tier " + std::to_string(tier) + ")";
+        p.potency = std::max(1, tier + 1);
+        p.permanent = true;
+        out.push_back(p);
+    }
+    return out;
 }

@@ -1,32 +1,18 @@
-#pragma once
-#include <string>
-#include <vector>
-#include <functional>
-#include <cstdint>
-#include "player.h"
+// enemy.cpp
 #include "enemy.h"
+#include <algorithm>
 
-enum class BattleOutcome { WIN, LOSE, FLEE };
-
-struct BattleEvent { std::string text; };
-struct BattleResult {
-    BattleOutcome outcome = BattleOutcome::LOSE;
-    int xpGained = 0;
-    int reviveTokensGained = 0;
-    std::vector<std::string> itemDrops;
-    PlayerState finalPlayerState;
-    std::vector<BattleEvent> events;
+static std::vector<Enemy> s_defaultEnemies = {
+    {"goblin","Goblin", 8, 2, 0, {"iron_sword"}},
+    {"orc","Orc", 16, 4, 1, {"chainmail"}},
+    {"skeleton","Skeleton", 10, 3, 0, {"bone_shard"}}
 };
 
-using BattleEventCallback = std::function<void(const BattleEvent&)>;
-
-struct BattleContext {
-    bool allowFlee = true;
-    float xpMultiplier = 1.0f;
-};
-
-BattleResult runBattle(const PlayerState& player,
-                       const std::vector<Enemy>& enemies,
-                       const BattleContext& ctx = {},
-                       uint32_t seed = 0,
-                       BattleEventCallback cb = nullptr);
+const std::vector<Enemy>& getDefaultEnemies() {
+    static bool sorted = false;
+    if (!sorted) {
+        std::sort(s_defaultEnemies.begin(), s_defaultEnemies.end(), [](const Enemy& a, const Enemy& b){ return a.id < b.id; });
+        sorted = true;
+    }
+    return s_defaultEnemies;
+}

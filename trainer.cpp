@@ -1,13 +1,13 @@
+// trainer.cpp
 #include "trainer.h"
-#include <iostream>
+#include <algorithm>
 
-void openTrainer(PlayerState& player, const std::unordered_map<std::string, ClassDef>&) {
-    std::cout << "Trainer (stub) — Skill points: " << player.skillPoints << "\n";
-    if (player.skillPoints > 0) {
-        player.skillPoints -= 1;
-        player.permAttackBoost += 1;
-        std::cout << "Je besteedt 1 skill point: +1 permanent attack\n";
-    } else {
-        std::cout << "Geen skill points beschikbaar.\n";
-    }
+std::vector<TrainerOffer> getDefaultTrainerOffers() {
+    std::vector<TrainerOffer> v = {
+                                   {"t_evade", "Learn Evade", 1, "evade"},
+                                   {"t_fireball", "Train Fireball", 2, "fireball"},
+                                   {"t_strike", "Improve Strike", 0, "strike"},
+                                   };
+    std::sort(v.begin(), v.end(), [](const TrainerOffer& a, const TrainerOffer& b){ return a.id < b.id; });
+    return v;
 }

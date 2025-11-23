@@ -1,19 +1,21 @@
-// map.h
+// map2.h
 #pragma once
 #include <string>
-#include <unordered_map>
+#include <vector>
 
-struct LocInfo {
+struct MapNode {
+    std::string key;
     std::string label;
-    int id = 0;
-    int visited = 0;
-    // voeg hier extra velden toe indien nodig, bv. hasDungeon, accessible, hasInn, etc.
-    bool accessible = true;
-    bool hasDungeon = false;
-    bool hasInn = false;
+    int x = 0;
+    int y = 0;
 };
 
-struct WorldMap {
-    // key = canonical key zoals "Villages", value = info
-    std::unordered_map<std::string, LocInfo> locations;
+struct GameMap {
+    std::string name;
+    int width = 0;
+    int height = 0;
+    std::vector<MapNode> nodes;
+    std::string heroLocationKey;
 };
+
+GameMap loadDefaultMap();

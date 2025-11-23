@@ -1,11 +1,14 @@
+// loot.h
 #pragma once
 #include <string>
 #include <vector>
-#include "player.h"
-#include "enemy.h"
 
-// Generate loot item ids for a given enemy
-std::vector<std::string> generateLootForEnemy(const Enemy& enemy);
+struct Potion {
+    std::string id;
+    std::string name;
+    int potency = 1;
+    bool permanent = false;
+};
 
-// Apply a named loot item effect to the player (perm or temporary)
-void applyLootItemToPlayer(PlayerState& player, const std::string& itemId);
+std::vector<std::string> generateLootForEnemy(const std::string& enemyId);
+std::vector<Potion> convertWeaponToPotions(const std::string& weaponId, int tier, int durability);
