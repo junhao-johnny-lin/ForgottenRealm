@@ -1,16 +1,20 @@
 #pragma once
 #include <string>
-#include <vector>
 #include <unordered_map>
-#include "player.h"
+#include <vector>
 
-struct ClassSkill {
-    std::string id;
-    std::string name;
-    std::string description;
-    int cost;
-    std::string classId; // warrior|mage|ranger|assassin
+// Skill definitie
+struct Skill {
+    std::string id;          // unieke id, bv. "slash"
+    std::string name;        // naam, bv. "Slash"
+    std::string description; // korte uitleg
+    int baseDamage;          // basis damage (optioneel)
+    int manaCost;            // mana of resource cost (optioneel)
+    bool passive;            // true = passieve skill, false = actieve skill
 };
 
-const std::unordered_map<std::string, std::vector<ClassSkill>>& getClassSkills();
-bool buyClassSkill(PlayerState& p, const std::string& skillId);
+// Geeft alle skills terug
+const std::unordered_map<std::string, Skill>& getAllSkills();
+
+// Haal een skill op via id
+const Skill* getSkillById(const std::string& id);

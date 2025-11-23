@@ -27,6 +27,11 @@ add_executable(test1
   skills.h skills.cpp
   class_skills.h class_skills.cpp
   save.h save.cpp
+  class_defs.h class_defs.cpp
+  dungeon.h dungeon.cpp
+  loot.h loot.cpp
+  trainer.h trainer.cpp
+  map2.h map2.cpp
 )
 target_link_libraries(test1 Qt${QT_VERSION_MAJOR}::Core)
 

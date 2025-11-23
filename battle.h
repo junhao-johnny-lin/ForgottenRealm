@@ -1,17 +1,32 @@
 #pragma once
-#include "enemy.h"
+#include <vector>
+#include <functional>
+#include <cstdint>
 #include "player.h"
+#include "enemy.h"
 
-struct CombatResult {
-    bool playerWon;
-    int xpEarned;
+enum class BattleOutcome { WIN, LOSE, FLEE };
+
+struct BattleEvent { std::string text; };
+
+struct BattleResult {
+    BattleOutcome outcome = BattleOutcome::LOSE;
+    int xpGained = 0;
+    int reviveTokensGained = 0;
+    std::vector<std::string> itemDrops;
+    PlayerState finalPlayerState;
+    std::vector<BattleEvent> events;
 };
 
-int scaleDailyStat(int base, double percentPerDay, int days);
-int scaleDailyXP(int baseXP, double percentPerDay, int days);
+using BattleEventCallback = std::function<void(const BattleEvent&)>;
 
-EnemyType makeScaledDungeonBoss(const EnemyType& bossBase, int daysSince);
-struct BossStats { int hp; int attack; int defence; int xp; };
-BossStats generateUltimateBoss(const EnemyType& lastBossBase, int daysSince);
+struct BattleContext {
+    bool allowFlee = true;
+    float xpMultiplier = 1.0f;
+};
 
-CombatResult fight(PlayerState& p, const EnemyType& e);
+BattleResult runBattle(const PlayerState& player,
+                       const std::vector<Enemy>& enemies,
+                       const BattleContext& ctx = {},
+                       uint32_t seed = 0,
+                       BattleEventCallback cb = nullptr);

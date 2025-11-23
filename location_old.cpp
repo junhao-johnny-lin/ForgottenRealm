@@ -2,6 +2,7 @@
 //#include <iostream>
 
 using namespace std;
+//21 locaties
 
 void initializeLocations(GameMap& map) {
     // Picta sublocatie

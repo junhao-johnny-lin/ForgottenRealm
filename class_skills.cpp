@@ -1,43 +1,31 @@
 #include "class_skills.h"
-#include <algorithm>
-#include <iostream>
 
-static std::unordered_map<std::string, std::vector<ClassSkill>> s_classSkills = {
-    {"warrior", {
-                    {"WARRIOR_SLAM","Shield Slam","+20% damage, stun chance (1 turn)",1,"warrior"},
-                    {"WARRIOR_RAGE","Battle Rage","+20% attack for 3 turns",2,"warrior"},
-                    {"WARRIOR_IRONWILL","Iron Will","+10% permanent defence",3,"warrior"}
-                }},
-    {"mage", {
-                 {"MAGE_FIREBALL","Fireball","+30% spell damage",1,"mage"},
-                 {"MAGE_ARCANE","Arcane Surge","Double mana regen 5 turns",2,"mage"},
-                 {"MAGE_ELEMENTAL","Elemental Mastery","+10% all spells",3,"mage"}
-             }},
-    {"ranger", {
-                   {"RANGER_ARROW","Piercing Arrow","Hits multiple enemies",1,"ranger"},
-                   {"RANGER_CAMO","Camouflage","Evade first hit in battle",2,"ranger"},
-                   {"RANGER_BEAST","Beast Bond","Summon companion",3,"ranger"}
-               }},
-    {"assassin", {
-                     {"ASSASSIN_BACKSTAB","Backstab","Double damage first strike",1,"assassin"},
-                     {"ASSASSIN_POISON","Poison Blade","+5 DoT per turn",2,"assassin"},
-                     {"ASSASSIN_SHADOWSTEP","Shadowstep","Teleport + guaranteed crit",3,"assassin"}
-                 }}
-};
+const std::unordered_map<std::string, Skill>& getAllSkills() {
+    static std::unordered_map<std::string, Skill> skills = {
+        {"slash",       {"slash", "Slash", "Een snelle aanval met je zwaard.", 10, 0, false}},
+        {"block",       {"block", "Block", "Verhoogt je verdediging tijdelijk.", 0, 0, false}},
+        {"parry",       {"parry", "Parry", "Kans om een aanval volledig te ontwijken.", 0, 0, false}},
+        {"riposte",     {"riposte", "Riposte", "Counter‑aanval na een succesvolle parry.", 15, 0, false}},
+        {"holy_strike", {"holy_strike", "Holy Strike", "Een krachtige aanval met heilige energie.", 25, 5, false}},
 
-const std::unordered_map<std::string, std::vector<ClassSkill>>& getClassSkills(){ return s_classSkills; }
+        {"aim",         {"aim", "Aim", "Verhoogt je crit‑chance voor 1 beurt.", 0, 0, false}},
+        {"multi_shot",  {"multi_shot", "Multi Shot", "Schiet meerdere pijlen tegelijk.", 12, 3, false}},
+        {"evasion",     {"evasion", "Evasion", "Verhoogt je dodge‑chance tijdelijk.", 0, 0, false}},
+        {"rapid_fire",  {"rapid_fire", "Rapid Fire", "Snelle reeks pijlen.", 20, 4, false}},
+        {"nature_bond", {"nature_bond", "Nature Bond", "Passive: verhoogt resistances tegen beasts.", 0, 0, true}},
 
-bool buyClassSkill(PlayerState& p, const std::string& skillId) {
-    auto itList = s_classSkills.find(p.classId);
-    if (itList == s_classSkills.end()) { std::cout << "Onbekende class.\n"; return false; }
-    const auto& list = itList->second;
-    auto it = std::find_if(list.begin(), list.end(), [&](const ClassSkill& s){ return s.id == skillId; });
-    if (it == list.end()) { std::cout << "Skill niet beschikbaar voor class.\n"; return false; }
-    if (std::find(p.unlockedClassSkills.begin(), p.unlockedClassSkills.end(), it->id) != p.unlockedClassSkills.end()) {
-        std::cout << "Skill al gekocht.\n"; return false;
-    }
-    if (!spendSkillPoints(p, it->cost)) { std::cout << "Niet genoeg skill points.\n"; return false; }
-    p.unlockedClassSkills.push_back(it->id);
-    std::cout << "Klass skill gekocht: " << it->name << "\n";
-    return true;
+        {"heal",        {"heal", "Heal", "Herstel een deel van je HP.", -15, 5, false}}, // negatieve damage = healing
+        {"root",        {"root", "Root", "Vertraagt de vijand.", 0, 3, false}},
+        {"regen",       {"regen", "Regeneration", "Passive: herstel HP per beurt.", 0, 0, true}},
+        {"wrath",       {"wrath", "Wrath", "Krachtige natuur‑aanval.", 18, 4, false}},
+        {"earth_guard", {"earth_guard", "Earth Guard", "Passive: verhoogt je DEF permanent.", 0, 0, true}}
+    };
+    return skills;
+}
+
+const Skill* getSkillById(const std::string& id) {
+    const auto& skills = getAllSkills();
+    auto it = skills.find(id);
+    if (it != skills.end()) return &it->second;
+    return nullptr;
 }

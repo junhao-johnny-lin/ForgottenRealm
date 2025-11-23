@@ -1,19 +1,13 @@
 #pragma once
 #include <string>
-#include <unordered_map>
 
-enum class EnemyTier { Common, Uncommon, Rare, Elite, Boss, UltimateBoss, Legendary };
-
-struct EnemyType {
+// Minimal Enemy definition used by battle, loot and other systems.
+// Extend fields as needed to match your game's enemy.h if it already exists.
+struct Enemy {
     std::string id;
     std::string name;
-    EnemyTier tier;
-    int baseHp;
-    int baseAttack;
-    int baseDefence;
-    int baseXP;
-    double growthFactor; // per dag (niet voor Boss/UltimateBoss)
-    bool isBoss = false;
+    int hp = 10;
+    int attack = 3;
+    int defense = 1;
+    int category = 0; // optional: use int categories for loot/logic, 0 = default
 };
-
-const std::unordered_map<std::string, EnemyType>& getEnemyTypes();

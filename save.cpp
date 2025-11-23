@@ -1,85 +1,175 @@
 #include "save.h"
 #include <fstream>
 #include <sstream>
-#include <algorithm>
+#include <iostream>
 
-bool saveGameState(const std::string& path,
-                   const std::unordered_map<std::string, Location>& nodes,
-                   const std::vector<Achievement>& achievements,
-                   const PlayerState& player,
-                   const std::string& lastNewDungeonBossId,
-                   int lastBossKillDay)
+static inline const char* boolToStr(bool v) { return v ? "1" : "0"; }
+static inline bool strToBool(const std::string& s) { return !s.empty() && s[0] == '1'; }
+
+bool saveGame(const PlayerState& player,
+              const std::unordered_map<std::string, Location>& nodes,
+              const std::vector<Achievement>& achievements,
+              const std::string& path)
 {
-    std::ofstream out(path);
-    if (!out) return false;
-    out << "#PLAYER " << player.hp << "|" << player.maxHp << "|" << player.attack << "|" << player.defence
-        << "|" << player.xp << "|" << player.level << "|" << player.skillPoints << "|" << player.classId
-        << "|" << player.reviveTokens << "|" << player.dayCount << "|" << player.currentLocationKey << "\n";
-    out << "#LASTBOSS " << lastNewDungeonBossId << "|" << lastBossKillDay << "\n";
+    std::ofstream f(path);
+    if (!f) return false;
 
-    out << "#NODES\n";
-    for (const auto &kv : nodes) {
-        const auto &n = kv.second;
-        out << n.key << '|' << (n.explored? "1":"0") << '|' << (n.defeated? "1":"0") << '|' << (n.current? "1":"0") << '\n';
+    // PLAYER
+    f << "SECTION=PLAYER\n";
+    f << player.classId << "|" << player.level << "|" << player.xp << "|" << player.skillPoints << "|"
+      << player.maxHp << "|" << player.hp << "|" << player.attack << "|" << player.defence << "|"
+      << player.currentLocationKey << "|" << player.reviveTokens << "\n";
+
+    // NODES
+    f << "SECTION=NODES\n";
+    for (const auto& kv : nodes) {
+        const auto& k = kv.first;
+        const auto& n = kv.second;
+        f << k << "|" << n.label << "|" << boolToStr(n.visited) << "|" << boolToStr(n.accessible) << "|"
+          << boolToStr(n.hasTrainer) << "|" << boolToStr(n.hasCamp) << "|" << boolToStr(n.hasDungeon) << "|"
+          << boolToStr(n.hasInn) << "|" << boolToStr(n.dungeonCleared) << "\n";
     }
-    out << "#ACHS\n";
-    for (const auto &a : achievements) {
-        out << a.id << '|' << (a.unlocked? "1":"0") << '\n';
+
+    // ACHIEVEMENTS: format:
+    // id|name|description|unlocked|hp;strength;defence;mana;speed;intelligence|key1=val,key2=val
+    f << "SECTION=ACHIEVEMENTS\n";
+    for (const auto& a : achievements) {
+        f << a.id << "|" << a.name << "|" << a.description << "|" << (a.unlocked ? "1" : "0") << "|";
+        f << a.mods.hp << ";" << a.mods.strength << ";" << a.mods.defence << ";" << a.mods.mana << ";" << a.mods.speed << ";" << a.mods.intelligence << "|";
+        bool first = true;
+        for (const auto &kv : a.flags) {
+            if (!first) f << ",";
+            f << kv.first << "=" << kv.second;
+            first = false;
+        }
+        f << "\n";
     }
-    out << "#CLASS_SKILLS\n";
-    for (const auto &sid : player.unlockedClassSkills) out << sid << "\n";
+
     return true;
 }
 
-bool loadGameState(const std::string& path,
-                   std::unordered_map<std::string, Location>& nodes,
-                   std::vector<Achievement>& achievements,
-                   PlayerState& player,
-                   std::string& lastNewDungeonBossId,
-                   int& lastBossKillDay)
+bool loadGame(PlayerState& player,
+              std::unordered_map<std::string, Location>& nodes,
+              std::vector<Achievement>& achievements,
+              const std::string& path)
 {
-    std::ifstream in(path);
-    if (!in) return false;
+    std::ifstream f(path);
+    if (!f) return false;
+
     std::string line;
-    enum Section { NONE, NODES, ACHS, CLASS_SKILLS } sec = NONE;
-    while (std::getline(in, line)) {
-        if (line.empty()) continue;
-        if (line.rfind("#PLAYER ",0)==0) {
-            std::istringstream iss(line.substr(8));
-            std::string hp,maxhp,atk,def,xp,lvl,sp,classId,rt,days,loc;
-            std::getline(iss,hp,'|'); std::getline(iss,maxhp,'|'); std::getline(iss,atk,'|'); std::getline(iss,def,'|');
-            std::getline(iss,xp,'|'); std::getline(iss,lvl,'|'); std::getline(iss,sp,'|'); std::getline(iss,classId,'|');
-            std::getline(iss,rt,'|'); std::getline(iss,days,'|'); std::getline(iss,loc,'|');
-            player.hp = std::stoi(hp); player.maxHp = std::stoi(maxhp); player.attack = std::stoi(atk); player.defence = std::stoi(def);
-            player.xp = std::stoi(xp); player.level = std::stoi(lvl); player.skillPoints = std::stoi(sp); player.classId = classId;
-            player.reviveTokens = std::stoi(rt); player.dayCount = std::stoi(days); player.currentLocationKey = loc;
-        } else if (line.rfind("#LASTBOSS ",0)==0) {
-            std::istringstream iss(line.substr(10));
-            std::string id, day;
-            std::getline(iss,id,'|'); std::getline(iss,day,'|');
-            lastNewDungeonBossId = id; lastBossKillDay = std::stoi(day);
-        } else if (line == "#NODES") { sec = NODES; }
-        else if (line == "#ACHS") { sec = ACHS; }
-        else if (line == "#CLASS_SKILLS") { sec = CLASS_SKILLS; }
-        else if (sec == NODES) {
+    std::string section;
+    nodes.clear();
+    achievements.clear();
+
+    while (std::getline(f, line)) {
+        if (line.rfind("SECTION=",0) == 0) { section = line.substr(8); continue; }
+        if (section == "PLAYER") {
             std::istringstream iss(line);
-            std::string k,e,d,c;
-            std::getline(iss,k,'|'); std::getline(iss,e,'|'); std::getline(iss,d,'|'); std::getline(iss,c,'|');
-            auto it = nodes.find(k);
-            if (it != nodes.end()) {
-                it->second.explored = (e=="1");
-                it->second.defeated = (d=="1");
-                it->second.current = (c=="1");
+            std::string cls;
+            int level=1, xp=0, sp=0, maxHp=20, hp=20, atk=0, def=0;
+            std::string loc; int rev=0;
+
+            if (!std::getline(iss, cls, '|')) continue;
+            auto nextInt = [&](int &out)->bool {
+                std::string token;
+                if (!std::getline(iss, token, '|')) return false;
+                try { out = std::stoi(token); } catch(...) { out = 0; }
+                return true;
+            };
+
+            // tokens may be separated by '|' as expected in saveGame
+            std::string token;
+            if (!std::getline(iss, token, '|')) continue; // level
+            try { level = std::stoi(token); } catch(...) { level = 1; }
+            if (!std::getline(iss, token, '|')) continue; try { xp = std::stoi(token); } catch(...) { xp = 0; }
+            if (!std::getline(iss, token, '|')) continue; try { sp = std::stoi(token); } catch(...) { sp = 0; }
+            if (!std::getline(iss, token, '|')) continue; try { maxHp = std::stoi(token); } catch(...) { maxHp = 20; }
+            if (!std::getline(iss, token, '|')) continue; try { hp = std::stoi(token); } catch(...) { hp = maxHp; }
+            if (!std::getline(iss, token, '|')) continue; try { atk = std::stoi(token); } catch(...) { atk = 0; }
+            if (!std::getline(iss, token, '|')) continue; try { def = std::stoi(token); } catch(...) { def = 0; }
+            if (!std::getline(iss, loc, '|')) loc = "";
+            if (!std::getline(iss, token, '|')) token = "0"; try { rev = std::stoi(token); } catch(...) { rev = 0; }
+
+            player.classId = cls;
+            player.level = level;
+            player.xp = xp;
+            player.skillPoints = sp;
+            player.maxHp = maxHp;
+            player.hp = hp;
+            player.attack = atk;
+            player.defence = def;
+            player.currentLocationKey = loc;
+            player.reviveTokens = rev;
+
+        } else if (section == "NODES") {
+            std::istringstream iss(line);
+            std::string key,label,vVisited,vAccessible,vTrainer,vCamp,vHasDungeon,vHasInn,vDungeonCleared;
+            if (!std::getline(iss,key,'|')) continue;
+            if (!std::getline(iss,label,'|')) continue;
+            if (!std::getline(iss,vVisited,'|')) continue;
+            if (!std::getline(iss,vAccessible,'|')) continue;
+            if (!std::getline(iss,vTrainer,'|')) continue;
+            if (!std::getline(iss,vCamp,'|')) continue;
+            if (!std::getline(iss,vHasDungeon,'|')) continue;
+            if (!std::getline(iss,vHasInn,'|')) continue;
+            if (!std::getline(iss,vDungeonCleared,'|')) vDungeonCleared = "0";
+
+            Location n;
+            n.label = label;
+            n.visited = strToBool(vVisited);
+            n.accessible = strToBool(vAccessible);
+            n.hasTrainer = strToBool(vTrainer);
+            n.hasCamp = strToBool(vCamp);
+            n.hasDungeon = strToBool(vHasDungeon);
+            n.hasInn = strToBool(vHasInn);
+            n.dungeonCleared = strToBool(vDungeonCleared);
+            nodes[key] = n;
+
+        } else if (section == "ACHIEVEMENTS") {
+            std::istringstream iss(line);
+            std::string id,name,description,unlockedStr,modsStr,flagsStr;
+            if (!std::getline(iss,id,'|')) continue;
+            if (!std::getline(iss,name,'|')) continue;
+            if (!std::getline(iss,description,'|')) continue;
+            if (!std::getline(iss,unlockedStr,'|')) continue;
+            if (!std::getline(iss,modsStr,'|')) continue;
+            if (!std::getline(iss,flagsStr)) flagsStr = "";
+
+            Achievement a;
+            a.id = id;
+            a.name = name;
+            a.description = description;
+            a.unlocked = (!unlockedStr.empty() && unlockedStr[0]=='1');
+
+            // parse mods: hp;strength;defence;mana;speed;intelligence
+            std::istringstream mss(modsStr);
+            std::string token;
+            auto nextInt = [&]()->int {
+                if (!std::getline(mss, token, ';')) return 0;
+                try { return std::stoi(token); } catch(...) { return 0; }
+            };
+            a.mods.hp = nextInt();
+            a.mods.strength = nextInt();
+            a.mods.defence = nextInt();
+            a.mods.mana = nextInt();
+            a.mods.speed = nextInt();
+            a.mods.intelligence = nextInt();
+
+            // parse flags k=v,k2=v2
+            a.flags.clear();
+            std::istringstream fss(flagsStr);
+            while (std::getline(fss, token, ',')) {
+                if (token.empty()) continue;
+                auto pos = token.find('=');
+                if (pos==std::string::npos) continue;
+                std::string k = token.substr(0,pos);
+                int v = 0;
+                try { v = std::stoi(token.substr(pos+1)); } catch(...) { v = 0; }
+                a.flags[k] = v;
             }
-        } else if (sec == ACHS) {
-            std::istringstream iss(line);
-            std::string id, u;
-            std::getline(iss,id,'|'); std::getline(iss,u,'|');
-            auto it = std::find_if(achievements.begin(), achievements.end(), [&](const Achievement& a){return a.id==id;});
-            if (it != achievements.end()) it->unlocked = (u=="1");
-        } else if (sec == CLASS_SKILLS) {
-            player.unlockedClassSkills.push_back(line);
+            achievements.push_back(a);
         }
     }
+
     return true;
 }
