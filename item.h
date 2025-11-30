@@ -2,7 +2,6 @@
 #pragma once
 #include "Enums.h"
 #include <string>
-#include <vector>
 
 namespace Adventure {
 
@@ -13,7 +12,7 @@ public:
         : id_(id), name_(std::move(name)), type_(t), rarity_(r) {}
     virtual ~Item() = default;
 
-    virtual std::string use() { return "Used " + name_; }
+    virtual std::string use() = 0; // abstract: implement in derived items
 
     int id() const { return id_; }
     const std::string& name() const { return name_; }

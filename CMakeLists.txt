@@ -35,22 +35,6 @@ add_executable(test1
   battleengine.h battleengine.cpp
   savesystem.h savesystem.cpp
   gameengine.h gameengine.cpp
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 )
 target_link_libraries(test1 Qt${QT_VERSION_MAJOR}::Core)
 

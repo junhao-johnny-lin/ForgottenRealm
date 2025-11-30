@@ -1,85 +1,108 @@
-// FILE: include/Player.h
+// FILE: include/Player_1_2.h
 #pragma once
 #include "Entity.h"
 #include "Item.h"
+#include "Weapon.h"
+#include "Armor.h"
 #include "Skills_1_2.h"
 #include "Enums.h"
 #include <vector>
+#include <map>
 #include <memory>
 #include <string>
-#include <map>
-#include "achievement_1_2.h"
 
 namespace Adventure {
 
 class Player : public Entity {
 public:
     Player();
-    explicit Player(std::string name);
+    Player(std::string name, ClassType startClass);
+    Player(const Player& other);
+    ~Player() override;
 
     void update() override {}
 
-    // inventory & equip
-    void addItem(std::shared_ptr<Item> it);
-    const std::vector<std::shared_ptr<Item>>& inventory() const;
-    bool canEquip(const Item& it) const;
-    void equipWeapon(int invIndex); // simple equip by inventory index (weapon)
-    void equipArmor(int invIndex);
-    int equippedWeaponDamage() const;
-    int equippedArmorDefense() const;
+    const std::string& name() const;
 
-    // classes & skills
-    void setClass(ClassType c);
-    ClassType characterClass() const;
-    bool learnSkill(const Skill& s);
-    bool hasSkill(const std::string& id) const;
-
-    // leveling
-    void gainExp(int e);
-    void levelUp();
-    int nextLevelExp() const;
-
-    // HP & combat
+    // stats
     int hp() const;
     int maxHp() const;
-    void heal(int amount);
-    void takeDamage(int dmg);
+    int atk() const;
+    int def() const;
     int level() const;
+    int exp() const;
+    int nextLevelExp() const;
 
-    // achievements
-    void applyAchievementBonus(const Achievement& a);
+    // classes
+    ClassType baseClass() const;
+    ClassType advancedClass() const;
+    ClassType ultimateClass() const;
+    ClassType hiddenClass() const;
 
-    std::string status() const;
+    void unlockAdvanced(ClassType c);
+    void unlockUltimate(ClassType c);
+    void unlockHidden(ClassType c);
 
-    // serialization helpers
-    std::vector<std::pair<int,int>> serializeInventory() const; // pair<type,id>
-    void deserializeInventory(const std::vector<std::pair<int,int>>& v);
-    std::vector<std::string> serializeSkills() const;
-    void deserializeSkills(const std::vector<std::string>& v);
-    void setLocationIndex(int idx) { locationIndex_ = idx; }
-    int locationIndex() const { return locationIndex_; }
+    // save overrides
+    void overrideName(const std::string& nm);
+    void overrideLevel(int lvl);
+    void overrideExp(int xp);
+    void overrideHp(int hp, int maxHp);
+    void overrideBaseClass(ClassType c);
 
-    ClassType classType() const { return class_; }
+    // combat
+    void takeDamage(int dmg);
+    void heal(int amount);
+    bool isAlive() const;
+
+    // leveling
+    void gainExp(int amount);
+    void levelUp();
+
+    // inventory
+    void addItem(std::shared_ptr<Item> it);
+    const std::vector<std::shared_ptr<Item>>& inventory() const;
+
+    bool canEquip(const Item& it) const;
+    void equipWeapon(std::shared_ptr<Weapon> w);
+    void equipArmor(std::shared_ptr<Armor> a);
+    Weapon* weapon() const;
+    Armor* armor() const;
+
+    // skills
+    bool learnSkill(const Skill& s);
+    bool hasSkill(const std::string& id) const;
+    const std::map<std::string, Skill>& learnedSkills() const;
+    void forceLearnSkill(const std::string& id, int lvl);
+
+    // skill points
+    int skillPoints() const;
+    void setSkillPoints(int sp);
+    void addSkillPoints(int sp);
+    bool consumeSkillPoints(int sp);
+
+    // day
+    int day() const;
+    void setDay(int d);
 
 private:
-    int level_;
-    int exp_;
+    std::string name_;
+    int hp_, maxHp_;
+    int baseAtk_, baseDef_;
+    int level_, exp_;
     int skillPoints_;
-    int hp_;
-    int maxHp_;
-    int inventoryCap_;
-    int locationIndex_;
+    int days_;
+
+    ClassType baseClass_;
+    ClassType advClass_;
+    ClassType ultClass_;
+    ClassType hidClass_;
+
+    std::shared_ptr<Weapon> weapon_;
+    std::shared_ptr<Armor> armor_;
     std::vector<std::shared_ptr<Item>> inventory_;
-    std::map<std::string, Skill> skills_;
-    ClassType class_;
-    // equipment indices in inventory (-1 none)
-    int equippedWeaponIndex_;
-    int equippedArmorIndex_;
-    // permanent bonuses
-    int bonusAttack_;
-    int bonusDefense_;
-    int bonusHp_;
-    int bonusExpPercent_;
+
+    std::map<std::string, Skill> learnedSkills_;
 };
 
 } // namespace Adventure

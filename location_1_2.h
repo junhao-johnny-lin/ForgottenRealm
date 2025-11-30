@@ -1,42 +1,35 @@
-// FILE: include/Location.h
+// FILE: include/Location_1_2.h
 #pragma once
-#include "Enemy_1_2.h"
-#include "Trainer_1_2.h"
-#include <vector>
 #include <string>
+#include "Dungeon_1_2.h"
+#include "Trainer_1_2.h" // you should have Trainer class; include path must match
+#include <optional>
 
 namespace Adventure {
 
 class Location {
 public:
-    Location() = default;
-    Location(std::string id, std::string desc);
+    Location();
+    Location(std::string id, std::string description, bool hasInn = true, bool hasDungeon = true);
 
-    void addEnemy(const Enemy& e);
-    void setTrainer(Trainer t);
     const std::string& id() const;
-    const std::string& desc() const;
-    bool hasDungeon() const;
-    void setDungeon(bool v);
+    const std::string& description() const;
     bool hasInn() const;
-    void setInn(bool v);
-    bool hasTrainer() const;
-    Trainer* trainer();
-    const std::vector<Enemy>& enemies() const;
+    bool hasDungeon() const;
 
-    // achievements per location
-    void addAchievementId(const std::string& id);
-    const std::vector<std::string>& achievementIds() const;
+    Dungeon& dungeon();
+    Trainer& trainer();
+
+    void setTrainer(const Trainer& t);
+    void setDungeon(const Dungeon& d);
 
 private:
     std::string id_;
     std::string desc_;
-    std::vector<Enemy> enemies_;
+    bool hasInn_;
+    bool hasDungeon_;
+    Dungeon dungeon_;
     Trainer trainer_;
-    bool hasTrainer_ = false;
-    bool hasDungeon_ = true;
-    bool hasInn_ = true;
-    std::vector<std::string> achievementIds_;
 };
 
 } // namespace Adventure

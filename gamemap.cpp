@@ -1,95 +1,41 @@
-// FILE: src/GameMap.cpp
-#include "GameMap.h"
-#include "trainer_1_2.h"
-#include "location_1_2.h"
-
+// FILE: gamemap.cpp
+#include "gamemap.h"
 #include <iostream>
+
 
 namespace Adventure {
 
-GameMap::GameMap() { build(); }
-const std::vector<Location>& GameMap::locations() const { return locations_; }
+GameMap::GameMap() {
+    build();
+}
 
 void GameMap::build() {
     locations_.clear();
 
-    // Hibernia index 0 - final zone
-    Location h("Hibernia", "Final forest - Hibernia (endboss)");
-    h.setDungeon(true);
-    h.setInn(true);
-    Trainer trh("Hibernia Elder");
-    trh.addSkill({"hib_free","Winter's Grace","Start skill (free)",1,0,5});
-    trh.addSkill({"hib_frost","Frost Nova","Area frost",10,2,20});
-    h.setTrainer(trh);
-    h.addAchievementId("hibernia_clear");
-    locations_.push_back(h);
-
-    // Araluen
-    Location ar("Araluen", "Central Araluen");
-    ar.setDungeon(true);
-    Trainer tra("Araluen Trainer");
-    tra.addSkill({"ar_slash","Slash","A basic slash",1,0,3});
-    ar.setTrainer(tra);
-    ar.addAchievementId("araluen_clear");
-    locations_.push_back(ar);
-
-    // Celtica
-    Location cel("Celtica", "Celtica villages");
-    cel.setDungeon(true);
-    Trainer trc("Celtica Ranger");
-    trc.addSkill({"cel_shot","Arrow Shot","Ranged attack",1,0,3});
-    cel.setTrainer(trc);
-    cel.addAchievementId("celtica_clear");
-    locations_.push_back(cel);
-
-    // Add other named locations until we have 18 total
-    std::vector<std::pair<std::string,std::string>> extra = {
-        {"Picto","Northern Drowned Forest"},
-        {"Norgate","Norgate Village"},
-        {"Caraway","Caraway Hamlet"},
-        {"Redmont","Redmont Castle"},
-        {"Gorlan","Gorlan"},
-        {"Thomtree","Thomtree"},
-        {"Seacliff","Seacliff"},
-        {"Western_World","Western World"},
-        {"Mountains","Mountain Range"},
-        {"Uthal_Plain","Uthal Plain"},
-        {"The_Fens","The Fens"},
-        {"Solitary_Plain","Solitary Plain"},
-        {"ThreeStep_Araluen","3 Step Pass (Araluen)"},
-        {"Morgarath_Plateau","Morgarath's Plateau"},
-        {"South_Cliffs","South Cliffs"}
-    };
-
-    for (size_t i = 0; i < extra.size() && locations_.size() < 18; ++i) {
-        Location loc(extra[i].first, extra[i].second);
-        loc.setDungeon(true); // everything except maybe some could have dungeons per your spec
-        Trainer t(extra[i].first + " Trainer");
-        t.addSkill({extra[i].first + "_basic", "Basic Strike", "Local basic strike", 1, 0, 3});
-        loc.setTrainer(t);
-        loc.addAchievementId(extra[i].first + "_clear");
-        locations_.push_back(loc);
-    }
-
-    // ensure count 18
-    while (locations_.size() < 18) {
-        int n = (int)locations_.size() + 1;
-        Location loc("Location" + std::to_string(n), "Wilderness " + std::to_string(n));
-        loc.setDungeon(true);
-        locations_.push_back(loc);
-    }
+    // --- 18 REGIO’S ---
+    locations_.emplace_back("Picta", "Noorden - Drowned Forest", true, true);
+    locations_.emplace_back("Hibernia", "Eindgebied - Laatste dungeon + Ultimate Boss", true, true);
+    locations_.emplace_back("Araluen", "Centraal Araluen", true, true);
+    locations_.emplace_back("Norgate", "Stad uit Araluen", true, true);
+    locations_.emplace_back("Redmont", "Stad uit Araluen", true, true);
+    locations_.emplace_back("Gorlan", "Stad uit Araluen", true, true);
+    locations_.emplace_back("Caraway", "Stad uit Araluen", true, true);
+    locations_.emplace_back("Hackham", "Stad uit Araluen", true, true);
+    locations_.emplace_back("Forest_Araluen", "Bossen van Araluen", true, true);
+    locations_.emplace_back("Western_World", "Westelijke zone", true, true);
+    locations_.emplace_back("Solitary_Plain", "Open vlakte", true, true);
+    locations_.emplace_back("Three_Step_Pass_Araluen", "3 step pass (Araluen)", true, true);
+    locations_.emplace_back("The_Fens", "Moerassen", true, true);
+    locations_.emplace_back("Celtica", "Zuid-West - villages", true, true);
+    locations_.emplace_back("Three_Step_Pass_Celtica", "3 step pass (Celtica)", true, true);
+    locations_.emplace_back("Morgarath_Plateau", "Plateau van Morgarath", true, true);
+    locations_.emplace_back("South_Cliffs", "Zuidelijke Kliffen", true, true);
+    locations_.emplace_back("Mountains_Plateau", "Bergen van het Plateau", true, true);
 }
 
-const Location* GameMap::getLocationById(const std::string& id) const {
-    for (const auto& l : locations_) if (l.id() == id) return &l;
-    return nullptr;
-}
-Location* GameMap::getLocationById(const std::string& id) {
-    for (auto& l : locations_) if (l.id() == id) return &l;
-    return nullptr;
-}
 
 void GameMap::draw() const {
+
     std::vector<std::string> map = {
         "┌─────────────────────────────────────────────────────────────────────────────────────────┐",
         "│                                     KAART VAN ARALUEN                                   │",
@@ -127,7 +73,20 @@ void GameMap::draw() const {
         "│                                       S                                                 │",
         "└─────────────────────────────────────────────────────────────────────────────────────────┘"
     };
-    for (const auto& l : map) std::cout << l << "\n";
+
+    for (const std::string& line : map)
+        std::cout << line << "\n";
+}
+
+const std::vector<Location>& GameMap::locations() const {
+    return locations_;
+}
+
+Location* GameMap::getLocation(const std::string& id) {
+    for (auto& loc : locations_)
+        if (loc.id() == id)
+            return &loc;
+    return nullptr;
 }
 
 } // namespace Adventure

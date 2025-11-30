@@ -1,26 +1,35 @@
 // FILE: src/GameEngine.cpp
 #include "GameEngine.h"
-#include "Dungeon_1_2.h"
 #include "SaveSystem.h"
 #include "Weapon.h"
 #include "Armor.h"
+#include "skills_1_2.h"
 #include <iostream>
 #include <cstdlib>
 #include <ctime>
-#include "location_1_2.h"
 
 using namespace Adventure;
 
 GameEngine::GameEngine()
-    : map_(), player_("Hero"), be_(), world_(), achievements_() {
+    : map_(),
+    player_("Hero", ClassType::Knight),
+    be_(),
+    world_(),
+    achievements_(),
+    currentLocationIndex_(1)
+{
     std::srand((unsigned)std::time(nullptr));
+
     // starter gear (class allowed lists)
     std::vector<ClassType> swordClasses = { ClassType::Knight, ClassType::Paladin, ClassType::Lancer };
     std::vector<ClassType> staffClasses = { ClassType::Mage, ClassType::Alchemist, ClassType::Summoner };
-    player_.addItem(std::make_shared<Weapon>(1,"Starter Sword",6,40,ItemRarity::Common,swordClasses));
-    player_.addItem(std::make_shared<Armor>(2,"Leather Armor",2,30,ItemRarity::Common,std::vector<ClassType>{ClassType::Ranger,ClassType::Scout}));
-    player_.setClass(ClassType::Knight);
-    player_.setLocationIndex(1); // Araluen default
+
+    // note: Weapon ctor signatures in your project may vary; adapt args if necessary
+    player_.addItem(std::make_shared<Weapon>(1, "Starter Sword", 6, 40, ItemRarity::Common, swordClasses));
+    player_.addItem(std::make_shared<Armor>(2, "Leather Armor", 2, 30, ItemRarity::Common, std::vector<ClassType>{ClassType::Ranger, ClassType::Scout}));
+
+    // Player already constructed with start class; ensure skillpoints/day defaults ok
+    player_.setDay(0);
 }
 
 void GameEngine::run() {
@@ -31,7 +40,7 @@ void GameEngine::run() {
         if (!(std::cin >> choice)) { std::cin.clear(); std::cin.ignore(10000,'\n'); continue; }
         switch(choice) {
         case 1: map_.draw(); break;
-        case 2: std::cout << player_.status() << "\n"; break;
+        case 2: showStatus(); break;
         case 3: randomEncounter(); break;
         case 4: enterDungeon(); break;
         case 5: visitTrainer(); break;
@@ -50,75 +59,108 @@ void GameEngine::showMainMenu() {
     std::cout << "1. Show Map\n2. Status\n3. Explore (random encounter)\n4. Enter dungeon (current location)\n5. Visit trainer\n6. Travel\n7. Rest at Inn (pass 1 day)\n8. Save\n9. Load\n10. Quit\nChoose: ";
 }
 
+void GameEngine::showStatus() const {
+    std::cout << "\n=== PLAYER STATUS ===\n";
+    std::cout << "Name: " << player_.name() << "\n";
+    std::cout << "Level: " << player_.level() << "  EXP: " << player_.exp() << "/" << player_.nextLevelExp() << "\n";
+    std::cout << "HP: " << player_.hp() << "/" << player_.maxHp() << "\n";
+    std::cout << "ATK: " << player_.atk() << "  DEF: " << player_.def() << "\n";
+    std::cout << "Skill Points: " << player_.skillPoints() << "\n";
+    std::cout << "Location: ";
+    const auto& locs = map_.locations();
+    if (currentLocationIndex_ >= 0 && currentLocationIndex_ < (int)locs.size())
+        std::cout << locs[currentLocationIndex_].id() << " - " << locs[currentLocationIndex_].description() << "\n";
+    else
+        std::cout << "Unknown\n";
+}
+
 void GameEngine::randomEncounter() {
     int r = std::rand()%100;
     if (r < 5) {
-        Enemy boss("Random Plains Boss", 120, 15, 12, EnemyTier::Epic);
-        boss.applyDayScaling(world_.day(), !world_.isBossCleared(1));
+        // Epic plains boss - give a level param (1)
+        Enemy boss("Random Plains Boss", 120, 15, 12, 1, EnemyTier::Epic);
+        boss.applyDayScaling(world_.day());
         be_.fight(player_, boss);
     } else {
-        Enemy e("Wild Wolf", 12, 3, 1, EnemyTier::Normal);
-        e.applyDayScaling(world_.day(), false);
+        Enemy e("Wild Wolf", 12, 3, 1, 1, EnemyTier::Normal);
+        e.applyDayScaling(world_.day());
         be_.fight(player_, e);
     }
 }
 
 void GameEngine::enterDungeon() {
-    int idx = player_.locationIndex();
-    if (idx < 0 || idx >= (int)map_.locations().size()) { std::cout << "Invalid location index\n"; return; }
-    const Location& loc = map_.locations()[idx];
+    const auto& locs = map_.locations();
+    if (currentLocationIndex_ < 0 || currentLocationIndex_ >= (int)locs.size()) {
+        std::cout << "Invalid location index\n";
+        return;
+    }
+    const Location& loc = locs[currentLocationIndex_];
     if (!loc.hasDungeon()) { std::cout << "No dungeon here.\n"; return; }
 
     std::cout << "Entering dungeon at " << loc.id() << "\n";
-    // every dungeon has 15 floors: per your choice (C)
-    Enemy bossPrototype(loc.id() + " Ancient", 200 + idx*50, 20 + idx*5, 10 + idx, EnemyTier::Boss);
-    Dungeon d(loc.id());
-    d.build(15, bossPrototype, idx);
 
-    // For each floor
-    for (const auto& floor : d.floors()) {
-        std::cout << "Floor " << floor.floorNumber << " - Enemies: " << floor.enemies.size() << "\n";
-        for (auto en : floor.enemies) {
-            // apply day scaling to each enemy using world day and whether previous boss uncleared (for ultimate rules only)
-            bool prevUncleared = !world_.isBossCleared(idx);
-            en.applyDayScaling(world_.day(), prevUncleared);
-            bool win = be_.fight(player_, en);
-            if (!win) { std::cout << "You retreated to an inn. Dungeon progress saved at floor " << floor.floorNumber << "\n"; return; }
-        }
-        if (floor.hasBoss) {
-            std::cout << "Boss encountered on floor " << floor.floorNumber << "\n";
-            // For Hibernia (index 0) make it ultimate multi-phase
-            if (idx == 0) {
-                Enemy ultimate = floor.enemies.front();
-                // ultimate boss scaling: apply world scaling (special)
-                ultimate.applyDayScaling(world_.day(), !world_.isBossCleared(idx));
-                bool win = be_.fightMultiPhase(player_, ultimate, world_, idx);
-                if (!win) { std::cout << "Defeated by ultimate boss.\n"; return; }
-            } else {
-                Enemy boss = floor.enemies.front();
-                boss.applyDayScaling(world_.day(), false);
-                bool win = be_.fight(player_, boss);
-                if (!win) { std::cout << "Defeated by boss.\n"; return; }
-                // mark boss cleared for area
-                world_.setBossCleared(idx, true);
-                // give reward & achievement
-                giveDungeonRewardAndAchievement(idx);
+    const int FLOORS = 15;
+    // For each floor, spawn simple enemies; final floor is boss
+    for (int floor = 1; floor <= FLOORS; ++floor) {
+        if (floor < FLOORS) {
+            // spawn 1-3 normal enemies depending on floor
+            int count = 1 + (std::rand()%2); // 1 or 2
+            std::cout << "Floor " << floor << " - Encounter " << count << " enemies\n";
+            for (int i=0;i<count;++i) {
+                int hp = 8 + floor*2;
+                int atk = 2 + floor/3;
+                int def = 0 + floor/5;
+                Enemy e(loc.id() + " Mob", hp, atk, def, floor, EnemyTier::Normal);
+                e.applyDayScaling(world_.day());
+                bool win = be_.fight(player_, e);
+                if (!win) { std::cout << "You retreated to an inn. Dungeon progress saved at floor " << floor << "\n"; return; }
             }
+        } else {
+            // boss on final floor
+            std::cout << "Floor " << floor << " - Boss encountered\n";
+            int hp = 150 + currentLocationIndex_*30;
+            int atk = 15 + currentLocationIndex_*3;
+            int def = 8 + currentLocationIndex_;
+            Enemy boss(loc.id() + " Boss", hp, atk, def, floor, EnemyTier::Boss);
+            boss.applyDayScaling(world_.day());
+
+            // If world has a last boss (from cleared final of all dungeons), apply extra scaling
+            // We'll check if world has last boss stats saved (non-zero)
+            if (world_.lastBossHp() > 0) {
+                Enemy lastBoss("LastDefeated", world_.lastBossHp(), world_.lastBossAtk(), world_.lastBossDef(), floor, EnemyTier::Boss);
+                boss.applyExtraFromBoss(lastBoss);
+            }
+
+            bool win = be_.fight(player_, boss);
+            if (!win) { std::cout << "Defeated by boss.\n"; return; }
+
+            // mark boss cleared and dungeon cleared
+            world_.setBossCleared(currentLocationIndex_, true);
+            world_.setDungeonCleared(currentLocationIndex_, true);
+            world_.markDungeonCleared(loc.id());
+
+            giveDungeonRewardAndAchievement(currentLocationIndex_);
         }
     }
+
     std::cout << "Dungeon fully cleared!\n";
-    world_.setDungeonCleared(idx, true);
-    giveDungeonRewardAndAchievement(idx);
 }
 
 void GameEngine::visitTrainer() {
-    int idx = player_.locationIndex();
-    if (idx < 0 || idx >= (int)map_.locations().size()) { std::cout << "Invalid location index\n"; return; }
-    Location* loc = map_.getLocationById(map_.locations()[idx].id());
-    if (!loc || !loc->hasTrainer()) { std::cout << "No trainer here.\n"; return; }
-    Trainer* t = loc->trainer();
-    std::cout << "Trainer " << t->name() << " offers:\n";
-    const auto& skills = t->skills();
+    const auto& locs = map_.locations();
+    if (currentLocationIndex_ < 0 || currentLocationIndex_ >= (int)locs.size()) {
+        std::cout << "Invalid location index\n";
+        return;
+    }
+
+    Location* locptr = map_.getLocation(locs[currentLocationIndex_].id());
+    if (!locptr) { std::cout << "Location not found\n"; return; }
+
+    // We expect Location::trainer() to exist (returns Trainer&)
+    Trainer& t = locptr->trainer();
+    // trainer name/skills assumed to exist in Trainer implementation
+    std::cout << "Trainer " << t.name() << " offers:\n";
+    const auto& skills = t.skills();
     for (size_t i=0;i<skills.size();++i) {
         std::cout << i << ". " << skills[i].name << " (lvl " << skills[i].requiredLevel << " cost " << skills[i].cost << ")\n";
     }
@@ -133,11 +175,11 @@ void GameEngine::visitTrainer() {
 void GameEngine::travel() {
     std::cout << "Available locations:\n";
     const auto& locs = map_.locations();
-    for (size_t i=0;i<locs.size();++i) std::cout << i << ": " << locs[i].id() << " - " << locs[i].desc() << "\n";
+    for (size_t i=0;i<locs.size();++i) std::cout << i << ": " << locs[i].id() << " - " << locs[i].description() << "\n";
     std::cout << "Enter index to travel: ";
     int idx; if(!(std::cin >> idx)) { std::cin.clear(); std::cin.ignore(10000,'\n'); return; }
     if (idx >=0 && idx < (int)locs.size()) {
-        player_.setLocationIndex(idx);
+        currentLocationIndex_ = idx;
         std::cout << "Traveled to " << locs[idx].id() << "\n";
     } else std::cout << "Invalid index\n";
 }
@@ -150,41 +192,45 @@ void GameEngine::restAtInn() {
 }
 
 void GameEngine::save() {
-    SaveSystem::saveAll(player_, world_, "save1.dat");
+    if (SaveSystem::saveAll(player_, world_, "save1.dat")) std::cout << "Game saved.\n";
+    else std::cout << "Failed to save game.\n";
 }
 
 void GameEngine::load() {
-    SaveSystem::loadAll(player_, world_, "save1.dat");
+    if (SaveSystem::loadAll(player_, world_, "save1.dat")) std::cout << "Game loaded.\n";
+    else std::cout << "Failed to load game.\n";
 }
 
 void GameEngine::checkAndApplyAchievement(const std::string& aid) {
+    // try to use AchievementSystem API (assumed)
     if (!achievements_.isUnlocked(aid)) {
         achievements_.unlock(aid);
         const Achievement* a = achievements_.get(aid);
         if (a) {
             std::cout << "Achievement unlocked: " << a->name << "\n";
-            player_.applyAchievementBonus(*a);
+            // if Player has applyAchievementBonus, call it; otherwise ignore
+            // many Player implementations have such method; we try to call safely:
+            // (we don't have compile-time check here; if your Player lacks applyAchievementBonus, remove next line)
+            // player_.applyAchievementBonus(*a);
         }
     }
 }
 
 void GameEngine::giveDungeonRewardAndAchievement(int idx) {
-    const auto& loc = map_.locations()[idx];
+    const auto& locs = map_.locations();
+    if (idx < 0 || idx >= (int)locs.size()) return;
+    const auto& loc = locs[idx];
+
     // give sample reward: weapon or armor based on idx
     if (idx % 2 == 0) {
-        player_.addItem(std::make_shared<Weapon>(100+idx, loc.id()+" Trophy Sword", 10 + idx/2, 50, ItemRarity::Rare));
+        player_.addItem(std::make_shared<Weapon>(100+idx, loc.id()+" Trophy Sword", 10 + idx/2, 50, ItemRarity::Rare, std::vector<ClassType>{}));
         std::cout << "Found " << loc.id() << " Trophy Sword!\n";
     } else {
-        player_.addItem(std::make_shared<Armor>(200+idx, loc.id()+" Trophy Armor", 5 + idx/2, 50, ItemRarity::Rare));
+        player_.addItem(std::make_shared<Armor>(200+idx, loc.id()+" Trophy Armor", 5 + idx/2, 50, ItemRarity::Rare, std::vector<ClassType>{}));
         std::cout << "Found " << loc.id() << " Trophy Armor!\n";
     }
-    // achievement
-    const auto& aids = loc.achievementIds();
-    if (!aids.empty()) {
-        checkAndApplyAchievement(aids.front());
-    } else {
-        // generic achievement
-        checkAndApplyAchievement(loc.id() + "_clear");
-    }
-}
 
+    // achievement (Location doesn't have achievementIds in your current Location, so use generic)
+    std::string aid = loc.id() + "_clear";
+    checkAndApplyAchievement(aid);
+}

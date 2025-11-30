@@ -3,8 +3,9 @@
 #include "GameMap.h"
 #include "Player_1_2.h"
 #include "BattleEngine.h"
-#include "gameworld.h"
+#include "GameWorld.h"
 #include "AchievementSystem.h"
+#include <string>
 
 namespace Adventure {
 
@@ -20,7 +21,10 @@ private:
     GameWorld world_;
     AchievementSystem achievements_;
 
+    int currentLocationIndex_ = 1; // track player's current location (Araluen by default)
+
     void showMainMenu();
+    void showStatus() const;
     void randomEncounter();
     void enterDungeon();
     void visitTrainer();

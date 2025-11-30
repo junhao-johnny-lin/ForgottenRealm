@@ -1,15 +1,16 @@
 // FILE: include/SaveSystem.h
 #pragma once
-#include "Player_1_2.h"
-#include "GameWorld.h"
 #include <string>
 
 namespace Adventure {
+class Player;
+class GameWorld;
 
 class SaveSystem {
 public:
-    static bool saveAll(const Player& p, const GameWorld& world, const std::string& filename);
-    static bool loadAll(Player& p, GameWorld& world, const std::string& filename);
+    // path can be any relative path; we used /mnt/data/Document.pdf as reference in docs.
+    static bool saveAll(const Player& p, const GameWorld& w, const std::string& path);
+    static bool loadAll(Player& p, GameWorld& w, const std::string& path);
 };
 
 } // namespace Adventure

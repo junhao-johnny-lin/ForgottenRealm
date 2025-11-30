@@ -1,8 +1,8 @@
-// FILE: include/Dungeon.h
+// FILE: include/Dungeon_1_2.h
 #pragma once
-#include "Enemy_1_2.h"
-#include <vector>
 #include <string>
+#include <vector>
+#include "Enemy_1_2.h"
 
 namespace Adventure {
 
@@ -15,11 +15,10 @@ struct DungeonFloor {
 class Dungeon {
 public:
     Dungeon() = default;
-    explicit Dungeon(std::string id) : id_(std::move(id)) {}
+    explicit Dungeon(const std::string& id);
 
-    void build(int floors, const Enemy& bossPrototype, int areaIndex);
+    void build(int floors, const Enemy& bossPrototype, int regionIndex);
     const std::vector<DungeonFloor>& floors() const;
-    const std::string& id() const;
 
 private:
     std::string id_;

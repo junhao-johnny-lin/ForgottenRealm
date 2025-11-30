@@ -1,6 +1,6 @@
-// FILE: include/GameMap.h
+// FILE: gamemap.h
 #pragma once
-#include "Location_1_2.h"
+#include "location_1_2.h"
 #include <vector>
 #include <string>
 
@@ -9,13 +9,16 @@ namespace Adventure {
 class GameMap {
 public:
     GameMap();
-    const std::vector<Location>& locations() const;
-    const Location* getLocationById(const std::string& id) const;
-    Location* getLocationById(const std::string& id);
+
     void draw() const;
+
+    const std::vector<Location>& locations() const;
+    Location* getLocation(const std::string& id);
 
 private:
     void build();
+
+    // DIT MOET EEN VECTOR ZIJN, NIET EEN POINTER!
     std::vector<Location> locations_;
 };
 

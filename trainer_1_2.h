@@ -9,11 +9,10 @@ namespace Adventure {
 class Trainer {
 public:
     Trainer() = default;
-    Trainer(std::string name) : name_(std::move(name)) {}
-
-    void addSkill(const Skill& s) { skills_.push_back(s); }
-    const std::vector<Skill>& skills() const { return skills_; }
-    const std::string& name() const { return name_; }
+    explicit Trainer(std::string name);
+    void addSkill(const Skill& s);
+    const std::vector<Skill>& skills() const;
+    const std::string& name() const;
 
 private:
     std::string name_;

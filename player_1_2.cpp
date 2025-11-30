@@ -1,94 +1,70 @@
-// FILE: src/Player.cpp
+// FILE: src/Player_1_2.cpp
 #include "Player_1_2.h"
-#include "Weapon.h"
-#include "Armor.h"
-#include "achievement_1_2.h"
+#include "Skills_1_2.h"
 #include <iostream>
 
 namespace Adventure {
 
 Player::Player()
-    : Entity("Player"), level_(1), exp_(0), skillPoints_(0),
-      hp_(100), maxHp_(100), inventoryCap_(10), locationIndex_(1),
-      class_(ClassType::Knight), equippedWeaponIndex_(-1), equippedArmorIndex_(-1),
-      bonusAttack_(0), bonusDefense_(0), bonusHp_(0), bonusExpPercent_(0) {}
+    : name_("Hero"), hp_(100), maxHp_(100), baseAtk_(5), baseDef_(2),
+      level_(1), exp_(0), skillPoints_(0), days_(0),
+      baseClass_(ClassType::Knight), advClass_(ClassType::Knight),
+      ultClass_(ClassType::Knight), hidClass_(ClassType::Knight),
+      weapon_(nullptr), armor_(nullptr)
+{}
 
-Player::Player(std::string name)
-    : Entity(std::move(name)), level_(1), exp_(0), skillPoints_(0),
-      hp_(100), maxHp_(100), inventoryCap_(10), locationIndex_(1),
-      class_(ClassType::Knight), equippedWeaponIndex_(-1), equippedArmorIndex_(-1),
-      bonusAttack_(0), bonusDefense_(0), bonusHp_(0), bonusExpPercent_(0) {}
+Player::Player(std::string name, ClassType startClass)
+    : name_(std::move(name)), hp_(100), maxHp_(100), baseAtk_(5), baseDef_(2),
+      level_(1), exp_(0), skillPoints_(0), days_(0),
+      baseClass_(startClass), advClass_(startClass),
+      ultClass_(startClass), hidClass_(startClass),
+      weapon_(nullptr), armor_(nullptr)
+{}
 
-void Player::addItem(std::shared_ptr<Item> it) {
-    if ((int)inventory_.size() < inventoryCap_) inventory_.push_back(std::move(it));
-}
-const std::vector<std::shared_ptr<Item>>& Player::inventory() const { return inventory_; }
+Player::Player(const Player& other) = default;
+Player::~Player() = default;
 
-bool Player::canEquip(const Item& it) const {
-    // if item has allowedClasses, check if player's class is among them
-    if (it.type() == ItemType::Weapon) {
-        const Weapon* w = dynamic_cast<const Weapon*>(&it);
-        if (!w) return true;
-        if (w->allowedClasses().empty()) return true;
-        for (auto c : w->allowedClasses()) if (c == class_) return true;
-        return false;
-    } else if (it.type() == ItemType::Armor) {
-        const Armor* a = dynamic_cast<const Armor*>(&it);
-        if (!a) return true;
-        if (a->allowedClasses().empty()) return true;
-        for (auto c : a->allowedClasses()) if (c == class_) return true;
-        return false;
-    }
-    return true;
-}
+const std::string& Player::name() const { return name_; }
 
-void Player::equipWeapon(int invIndex) {
-    if (invIndex < 0 || invIndex >= (int)inventory_.size()) return;
-    if (inventory_[invIndex]->type() != ItemType::Weapon) return;
-    if (!canEquip(*inventory_[invIndex])) { std::cout << "Cannot equip: class restriction\n"; return; }
-    equippedWeaponIndex_ = invIndex;
-    std::cout << "Equipped " << inventory_[invIndex]->name() << "\n";
-}
+int Player::hp() const { return hp_; }
+int Player::maxHp() const { return maxHp_; }
+int Player::atk() const { return baseAtk_ + (weapon_ ? weapon_->damage() : 0); }
+int Player::def() const { return baseDef_ + (armor_ ? armor_->defense() : 0); }
+int Player::level() const { return level_; }
+int Player::exp() const { return exp_; }
+int Player::nextLevelExp() const { return 50 + level_*25; }
 
-void Player::equipArmor(int invIndex) {
-    if (invIndex < 0 || invIndex >= (int)inventory_.size()) return;
-    if (inventory_[invIndex]->type() != ItemType::Armor) return;
-    if (!canEquip(*inventory_[invIndex])) { std::cout << "Cannot equip: class restriction\n"; return; }
-    equippedArmorIndex_ = invIndex;
-    std::cout << "Equipped " << inventory_[invIndex]->name() << "\n";
-}
+ClassType Player::baseClass() const { return baseClass_; }
+ClassType Player::advancedClass() const { return advClass_; }
+ClassType Player::ultimateClass() const { return ultClass_; }
+ClassType Player::hiddenClass() const { return hidClass_; }
 
-int Player::equippedWeaponDamage() const {
-    if (equippedWeaponIndex_ < 0 || equippedWeaponIndex_ >= (int)inventory_.size()) return 1 + bonusAttack_;
-    const Weapon* w = dynamic_cast<const Weapon*>(inventory_[equippedWeaponIndex_].get());
-    if (!w) return 1 + bonusAttack_;
-    return w->damage() + bonusAttack_;
+void Player::unlockAdvanced(ClassType c) { advClass_ = c; }
+void Player::unlockUltimate(ClassType c) { ultClass_ = c; }
+void Player::unlockHidden(ClassType c) { hidClass_ = c; }
+
+void Player::overrideName(const std::string& nm) { name_ = nm; }
+void Player::overrideLevel(int lvl) { level_ = lvl; }
+void Player::overrideExp(int xp) { exp_ = xp; }
+void Player::overrideHp(int hp, int maxHp) { hp_ = hp; maxHp_ = maxHp; }
+void Player::overrideBaseClass(ClassType c) { baseClass_ = c; advClass_ = c; ultClass_ = c; hidClass_ = c; }
+
+void Player::takeDamage(int dmg) {
+    int mitig = def();
+    int finalD = dmg - mitig;
+    if (finalD < 1) finalD = 1;
+    hp_ -= finalD;
+    if (hp_ < 0) hp_ = 0;
 }
 
-int Player::equippedArmorDefense() const {
-    if (equippedArmorIndex_ < 0 || equippedArmorIndex_ >= (int)inventory_.size()) return bonusDefense_;
-    const Armor* a = dynamic_cast<const Armor*>(inventory_[equippedArmorIndex_].get());
-    if (!a) return bonusDefense_;
-    return a->defense() + bonusDefense_;
+void Player::heal(int amount) {
+    hp_ += amount;
+    if (hp_ > maxHp_) hp_ = maxHp_;
 }
+bool Player::isAlive() const { return hp_ > 0; }
 
-void Player::setClass(ClassType c) { class_ = c; }
-ClassType Player::characterClass() const { return class_; }
-
-bool Player::learnSkill(const Skill& s) {
-    if (skillPoints_ >= s.cost && level_ >= s.requiredLevel) {
-        skills_[s.id] = s;
-        skillPoints_ -= s.cost;
-        return true;
-    }
-    return false;
-}
-bool Player::hasSkill(const std::string& id) const { return skills_.count(id) > 0; }
-
-void Player::gainExp(int e) {
-    int bonus = e * bonusExpPercent_ / 100;
-    e += bonus;
-    exp_ += e;
+void Player::gainExp(int amount) {
+    exp_ += amount;
     while (exp_ >= nextLevelExp()) {
         exp_ -= nextLevelExp();
         levelUp();
@@ -96,67 +72,70 @@ void Player::gainExp(int e) {
 }
 
 void Player::levelUp() {
-    ++level_;
-    ++skillPoints_;
+    level_++;
+    skillPoints_++;
     maxHp_ += 10;
     hp_ = maxHp_;
-    ++inventoryCap_;
-    std::cout << name_ << " leveled up! Now level " << level_ << "\n";
+    baseAtk_ += 1;
+    baseDef_ += 1;
+    std::cout << "Level up! " << level_ << " (SP +" << 1 << ")\n";
 }
 
-int Player::nextLevelExp() const { return 50 + level_ * 30; }
-int Player::hp() const { return hp_; }
-int Player::maxHp() const { return maxHp_; }
-void Player::heal(int amount) { hp_ += amount; if (hp_ > maxHp_) hp_ = maxHp_; }
-void Player::takeDamage(int dmg) { hp_ -= dmg; if (hp_ < 0) hp_ = 0; }
-int Player::level() const { return level_; }
+void Player::addItem(std::shared_ptr<Item> it) { inventory_.push_back(it); }
+const std::vector<std::shared_ptr<Item>>& Player::inventory() const { return inventory_; }
 
-void Player::applyAchievementBonus(const Achievement& a) {
-    bonusAttack_ += a.bonusAttack;
-    bonusDefense_ += a.bonusDefense;
-    bonusHp_ += a.bonusHp;
-    bonusExpPercent_ += a.bonusExpPercent;
-    if (a.bonusHp != 0) { maxHp_ += a.bonusHp; hp_ += a.bonusHp; }
-}
-
-std::string Player::status() const {
-    return name_ + " Class:" + classTypeToString(class_) + " Lvl:" + std::to_string(level_) + " HP:" + std::to_string(hp_) + "/" + std::to_string(maxHp_) +
-           " SP:" + std::to_string(skillPoints_) + " EXP:" + std::to_string(exp_) + " Loc:" + std::to_string(locationIndex_);
-}
-
-std::vector<std::pair<int,int>> Player::serializeInventory() const {
-    std::vector<std::pair<int,int>> out;
-    for (const auto& it : inventory_) {
-        out.emplace_back(static_cast<int>(it->type()), it->id());
+bool Player::canEquip(const Item& it) const {
+    if (it.type() == ItemType::Weapon) {
+        const Weapon& w = dynamic_cast<const Weapon&>(it);
+        for (auto c : w.allowedClasses()) if (c == baseClass_ || c == advClass_ || c == ultClass_ || c == hidClass_) return true;
+        return false;
     }
-    return out;
-}
-void Player::deserializeInventory(const std::vector<std::pair<int,int>>& v) {
-    inventory_.clear();
-    for (const auto& pr : v) {
-        int t = pr.first;
-        int id = pr.second;
-        if (t == static_cast<int>(ItemType::Weapon)) {
-            inventory_.push_back(std::make_shared<Weapon>(id, "Loaded Sword"+std::to_string(id), 6 + id%4, 20, ItemRarity::Common));
-        } else if (t == static_cast<int>(ItemType::Armor)) {
-            inventory_.push_back(std::make_shared<Armor>(id, "Loaded Armor"+std::to_string(id), 2 + id%3, 20, ItemRarity::Common));
-        } else {
-            inventory_.push_back(std::make_shared<Item>(id, "Loaded Item"+std::to_string(id)));
-        }
+    if (it.type() == ItemType::Armor) {
+        const Armor& a = dynamic_cast<const Armor&>(it);
+        for (auto c : a.allowedClasses()) if (c == baseClass_ || c == advClass_ || c == ultClass_ || c == hidClass_) return true;
+        return false;
     }
+    return true;
 }
 
-std::vector<std::string> Player::serializeSkills() const {
-    std::vector<std::string> out;
-    for (const auto& kv : skills_) out.push_back(kv.first);
-    return out;
+void Player::equipWeapon(std::shared_ptr<Weapon> w) {
+    if (!canEquip(*w)) throw std::runtime_error("Cannot equip weapon");
+    weapon_ = w;
 }
-void Player::deserializeSkills(const std::vector<std::string>& v) {
-    skills_.clear();
-    for (const auto& id : v) {
-        Skill s; s.id = id; s.name = id; s.cost = 0; s.requiredLevel = 1;
-        skills_[id] = s;
+void Player::equipArmor(std::shared_ptr<Armor> a) {
+    if (!canEquip(*a)) throw std::runtime_error("Cannot equip armor");
+    armor_ = a;
+}
+Weapon* Player::weapon() const { return weapon_.get(); }
+Armor* Player::armor() const { return armor_.get(); }
+
+bool Player::learnSkill(const Skill& s) {
+    if (level_ < s.requiredLevel) return false;
+    if (skillPoints_ < s.cost) return false;
+    learnedSkills_[s.id] = s;
+    skillPoints_ -= s.cost;
+    return true;
+}
+bool Player::hasSkill(const std::string& id) const { return learnedSkills_.count(id) != 0; }
+const std::map<std::string, Skill>& Player::learnedSkills() const { return learnedSkills_; }
+void Player::forceLearnSkill(const std::string& id, int lvl) {
+    const Skill* sk = SkillTree::instance().skillById(id);
+    if (sk) {
+        Skill s = *sk;
+        s.requiredLevel = lvl;
+        learnedSkills_[id] = s;
+    } else {
+        Skill s; s.id = id; s.name = id; s.requiredLevel = lvl; s.cost = 0;
+        learnedSkills_[id] = s;
     }
 }
+
+int Player::skillPoints() const { return skillPoints_; }
+void Player::setSkillPoints(int sp) { skillPoints_ = sp; }
+void Player::addSkillPoints(int sp) { skillPoints_ += sp; }
+bool Player::consumeSkillPoints(int sp) { if (skillPoints_ < sp) return false; skillPoints_ -= sp; return true; }
+
+int Player::day() const { return days_; }
+void Player::setDay(int d) { days_ = d; }
 
 } // namespace Adventure
