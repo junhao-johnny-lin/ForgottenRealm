@@ -1,226 +1,195 @@
-// FILE: src/SaveSystem.cpp
-// Ultimate SaveSystem (option D). Uses /mnt/data/Document.pdf as specification reference.
-#include "SaveSystem.h"
-#include "Player_1_2.h"
-#include "GameWorld.h"
+// FILE: savesystem.cpp
+#include "savesystem.h"
+#include "player_1_2.h"
+#include "gameworld.h"
+#include "Item.h"
 #include "Weapon.h"
 #include "Armor.h"
-#include "Item.h"
-#include "Skills_1_2.h"
-
 #include <fstream>
 #include <iostream>
 
 namespace Adventure {
 
-static void writeStringEscaped(std::ofstream& ofs, const std::string& s) {
-    // simple escaping: write length then string (avoids spaces/newline issues)
-    ofs << s.size() << " " << s << "\n";
-}
-
-static std::string readStringEscaped(std::ifstream& ifs) {
-    size_t len = 0;
-    ifs >> len;
-    std::string tmp;
-    ifs.get(); // consume space
-    tmp.resize(len);
-    ifs.read(&tmp[0], len);
-    ifs.get(); // consume newline
-    return tmp;
-}
-
-bool SaveSystem::saveAll(const Player& p, const GameWorld& w, const std::string& path) {
-    std::ofstream ofs(path, std::ios::binary);
+bool SaveSystem::saveAll(const Player& p, const GameWorld& w, const std::string& path)
+{
+    std::ofstream ofs(path);
     if (!ofs) {
-        std::cerr << "SaveSystem: cannot open " << path << " for writing\n";
+        std::cerr << "ERROR: Cannot open save file.\n";
         return false;
     }
 
-    // HEADER (version)
-    ofs << "FRSV1\n";
-
-    // Player basic
-    writeStringEscaped(ofs, p.name());
+    // -------------------------
+    // PLAYER CORE
+    // -------------------------
+    ofs << p.name() << "\n";
     ofs << p.level() << " " << p.exp() << "\n";
     ofs << p.hp() << " " << p.maxHp() << "\n";
-    ofs << p.skillPoints() << "\n";
     ofs << p.day() << "\n";
 
-    // Classes
-    ofs << static_cast<int>(p.baseClass()) << " "
+    // -------------------------
+    // CLASS PROGRESSION
+    // -------------------------
+    ofs << static_cast<int>(p.baseClass())     << " "
         << static_cast<int>(p.advancedClass()) << " "
         << static_cast<int>(p.ultimateClass()) << " "
-        << static_cast<int>(p.hiddenClass()) << "\n";
+        << static_cast<int>(p.hiddenClass())   << "\n";
 
-    // Learned skills
-    const auto& skills = p.learnedSkills();
-    ofs << skills.size() << "\n";
-    for (const auto& kv : skills) {
-        writeStringEscaped(ofs, kv.first);          // id
-        ofs << kv.second.requiredLevel << " "      // saved level/requiredLevel slot
-            << kv.second.cost << " "               // cost
-            << kv.second.power << "\n";
+    // -------------------------
+    // SKILLS  (NO LEVEL)
+    // -------------------------
+    ofs << p.learnedSkills().size() << "\n";
+    for (auto& s : p.learnedSkills()) {
+        ofs << s.first << "\n";   // ONLY SKILL ID
     }
 
-    // Inventory (serialize each item minimally)
-    const auto& inv = p.inventory();
-    ofs << inv.size() << "\n";
-    for (const auto& it : inv) {
+    // -------------------------
+    // INVENTORY
+    // -------------------------
+    ofs << p.inventory().size() << "\n";
+    for (auto& it : p.inventory()) {
+
         ofs << static_cast<int>(it->type()) << " ";
-        writeStringEscaped(ofs, it->name());
-        ofs << it->rarity() << " ";
-        // For Weapon/Armor, write class-allowlist and stats
+
+        // Weapon
         if (it->type() == ItemType::Weapon) {
-            const Weapon* wpn = dynamic_cast<const Weapon*>(it.get());
-            ofs << wpn->damage() << " " << (int)wpn->durability() << " ";
-            // allowed classes
-            const auto& list = wpn->allowedClasses();
-            ofs << list.size() << " ";
-            for (auto c : list) ofs << static_cast<int>(c) << " ";
-            ofs << "\n";
-        } else if (it->type() == ItemType::Armor) {
-            const Armor* arm = dynamic_cast<const Armor*>(it.get());
-            ofs << arm->defense() << " " << (int)arm->durability() << " ";
-            const auto& list = arm->allowedClasses();
-            ofs << list.size() << " ";
-            for (auto c : list) ofs << static_cast<int>(c) << " ";
-            ofs << "\n";
-        } else {
-            ofs << "0\n";
+            Weapon* wpn = (Weapon*)it.get();
+            ofs << wpn->name() << " "
+                << wpn->damage() << " "
+                << static_cast<int>(wpn->rarity()) << "\n";
+        }
+
+        // Armor
+        else if (it->type() == ItemType::Armor) {
+            Armor* arm = (Armor*)it.get();
+            ofs << arm->name() << " "
+                << arm->defense() << " "
+                << static_cast<int>(arm->rarity()) << "\n";
+        }
+
+        // Generic Item
+        else {
+            ofs << it->name() << " "
+                << static_cast<int>(it->rarity()) << "\n";
         }
     }
 
-    // Equipped items (store by index in inventory or by name)
-    // We'll write weapon name and armor name (or empty)
-    writeStringEscaped(ofs, p.weapon() ? p.weapon()->name() : std::string());
-    writeStringEscaped(ofs, p.armor() ? p.armor()->name() : std::string());
+    // -------------------------
+    // WORLD
+    // -------------------------
+    int dungeonCount = 0;
+    for (int i = 0; i < 50; i++)
+        if (w.isDungeonCleared(i)) dungeonCount++;
 
-    // GameWorld: days and dungeon progress
-    ofs << w.day() << "\n";
-    auto cleared = w.clearedDungeons();
-    ofs << cleared.size() << "\n";
-    for (const auto& id : cleared) writeStringEscaped(ofs, id);
+    ofs << dungeonCount << "\n";
 
-    // boss stats
-    ofs << w.lastBossHp() << " " << w.lastBossAtk() << " " << w.lastBossDef() << " " << w.lastBossSpeed() << "\n";
+    for (int i = 0; i < 50; i++)
+        if (w.isDungeonCleared(i))
+            ofs << i << "\n";
 
-    // achievements
-    auto ach = w.achievements();
-    ofs << ach.size() << "\n";
-    for (const auto& kv : ach) {
-        writeStringEscaped(ofs, kv.first);
-        ofs << (kv.second ? 1 : 0) << "\n";
-    }
+    // boss clears
+    for (int i = 0; i < 50; i++)
+        ofs << (w.isBossCleared(i) ? 1 : 0) << " ";
 
-    ofs.close();
+    ofs << "\n";
     return true;
 }
 
-bool SaveSystem::loadAll(Player& p, GameWorld& w, const std::string& path) {
-    std::ifstream ifs(path, std::ios::binary);
+
+
+bool SaveSystem::loadAll(Player& p, GameWorld& w, const std::string& path)
+{
+    std::ifstream ifs(path);
     if (!ifs) {
-        std::cerr << "SaveSystem: cannot open " << path << " for reading\n";
+        std::cerr << "ERROR: Cannot open save file.\n";
         return false;
     }
 
-    std::string header;
-    std::getline(ifs, header);
-    if (header != "FRSV1") {
-        std::cerr << "SaveSystem: unknown save header\n";
-        return false;
-    }
+    // -------------------------
+    // PLAYER CORE
+    // -------------------------
+    std::string nm;
+    std::getline(ifs, nm);
+    if (nm.empty()) return false;
 
-    // Player basic
-    std::string pname = readStringEscaped(ifs);
-    int lvl, xp;
-    ifs >> lvl >> xp;
-    int hp, maxhp;
-    ifs >> hp >> maxhp;
-    int sp; ifs >> sp;
-    int day; ifs >> day;
-    p.overrideName(pname);
+    int lvl, exp, hp, maxHp, days;
+    ifs >> lvl >> exp;
+    ifs >> hp >> maxHp;
+    ifs >> days;
+
+    p.overrideName(nm);
     p.overrideLevel(lvl);
-    p.overrideExp(xp);
-    p.overrideHp(hp, maxhp);
-    p.setSkillPoints(sp);
-    p.setDay(day);
+    p.overrideExp(exp);
+    p.overrideHp(hp, maxHp);
+    p.setDay(days);
 
-    // Classes
-    int b,a,uu,h;
-    ifs >> b >> a >> uu >> h;
-    p.overrideBaseClass(static_cast<ClassType>(b));
-    p.unlockAdvanced(static_cast<ClassType>(a));
-    p.unlockUltimate(static_cast<ClassType>(uu));
-    p.unlockHidden(static_cast<ClassType>(h));
+    // -------------------------
+    // CLASS PROGRESSION
+    // -------------------------
+    int b,a,u,h;
+    ifs >> b >> a >> u >> h;
 
-    // skills
-    size_t sval;
-    ifs >> sval;
-    for (size_t i=0;i<sval;++i) {
-        std::string id = readStringEscaped(ifs);
-        int rl, cost, power;
-        ifs >> rl >> cost >> power;
-        p.forceLearnSkill(id, rl);
+    p.overrideBaseClass((ClassType)b);
+    p.unlockAdvanced((ClassType)a);
+    p.unlockUltimate((ClassType)u);
+    p.unlockHidden((ClassType)h);
+
+    // -------------------------
+    // SKILLS (NO LEVEL)
+    // -------------------------
+    size_t sc;
+    ifs >> sc;
+
+    for (size_t i = 0; i < sc; i++) {
+        std::string id;
+        ifs >> id;
+
+        const Skill* sk = SkillTree::instance().skillById(id);
+        if (sk)
+            p.forceLearnSkill(id, sk->requiredLevel);
+        else
+            p.forceLearnSkill(id, 1);
     }
 
-    // inventory
-    size_t invc;
-    ifs >> invc;
-    for (size_t i=0;i<invc;++i) {
-        int typeInt; ifs >> typeInt;
-        std::string iname = readStringEscaped(ifs);
-        int rarity; ifs >> rarity;
-        if (typeInt == (int)ItemType::Weapon) {
-            int dmg, dur; ifs >> dmg >> dur;
-            size_t acl; ifs >> acl;
-            std::vector<ClassType> allowed;
-            for (size_t j=0;j<acl;++j) { int ci; ifs >> ci; allowed.push_back(static_cast<ClassType>(ci)); }
-            auto wptr = std::make_shared<Weapon>(1000+(int)i, iname, dmg, dur, static_cast<ItemRarity>(rarity), allowed);
-            p.addItem(wptr);
-        } else if (typeInt == (int)ItemType::Armor) {
-            int df, dur; ifs >> df >> dur;
-            size_t acl; ifs >> acl;
-            std::vector<ClassType> allowed;
-            for (size_t j=0;j<acl;++j) { int ci; ifs >> ci; allowed.push_back(static_cast<ClassType>(ci)); }
-            auto ap = std::make_shared<Armor>(2000+(int)i, iname, df, dur, static_cast<ItemRarity>(rarity), allowed);
-            p.addItem(ap);
-        } else {
-            int zero; ifs >> zero;
-        }
+    // -------------------------
+    // INVENTORY
+    // -------------------------
+    size_t ic;
+    ifs >> ic;
+
+    for (size_t i = 0; i < ic; i++) {
+        int t;
+        ifs >> t;
+
+        std::string nm2;
+        int v1, v2;
+        ifs >> nm2 >> v1 >> v2;
+
+        if (t == (int)ItemType::Weapon)
+            p.addItem(std::make_shared<Weapon>(nm2, v1, (ItemRarity)v2));
+        else if (t == (int)ItemType::Armor)
+            p.addItem(std::make_shared<Armor>(nm2, v1, (ItemRarity)v2));
+        else
+            p.addItem(std::make_shared<Item>(nm2, (ItemRarity)v2));
     }
 
-    // equipped names
-    std::string wname = readStringEscaped(ifs);
-    std::string aname = readStringEscaped(ifs);
-    // try to equip by name (linear search)
-    for (auto& it : p.inventory()) {
-        if (!wname.empty() && it->type() == ItemType::Weapon && it->name() == wname) {
-            p.equipWeapon(std::dynamic_pointer_cast<Weapon>(it));
-        }
-        if (!aname.empty() && it->type() == ItemType::Armor && it->name() == aname) {
-            p.equipArmor(std::dynamic_pointer_cast<Armor>(it));
-        }
+    // -------------------------
+    // WORLD
+    // -------------------------
+    size_t clearedCount;
+    ifs >> clearedCount;
+
+    for (size_t i = 0; i < clearedCount; i++) {
+        int id;
+        ifs >> id;
+        w.setDungeonCleared(id, true);
     }
 
-    // GameWorld
-    int gday; ifs >> gday; w.fromLoadDay(gday);
-    size_t clearedCount; ifs >> clearedCount;
-    for (size_t i=0;i<clearedCount;++i) {
-        std::string id = readStringEscaped(ifs);
-        w.markDungeonCleared(id);
+    for (int i = 0; i < 50; i++) {
+        int v;
+        ifs >> v;
+        w.setBossCleared(i, v != 0);
     }
 
-    int bh,ba,bd,bs; ifs >> bh >> ba >> bd >> bs;
-    w.setLastBossStats(bh,ba,bd,bs);
-
-    size_t achCount; ifs >> achCount;
-    for (size_t i=0;i<achCount;++i) {
-        std::string id = readStringEscaped(ifs);
-        int unlocked; ifs >> unlocked;
-        w.forceAchievement(id, unlocked != 0);
-    }
-
-    ifs.close();
     return true;
 }
 

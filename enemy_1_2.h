@@ -21,16 +21,16 @@ public:
     int level() const;
     EnemyTier tier() const;
 
-    void takeDamage(int d);
+    void takeDamage(int dmg);
     bool isDead() const;
 
-    // scaling applied by world days
+    // scaling over world days
     void applyDayScaling(int days);
 
-    // apply extra 50% of last boss stats (for ultimate)
+    // ultimate boss scaling: add 50% of last boss stats
     void applyExtraFromBoss(const Enemy& lastBoss);
 
-    // base stats for saving/loading
+    // expose raw stats for save/load
     int baseHp() const;
     int baseAtk() const;
     int baseDef() const;
@@ -39,9 +39,11 @@ private:
     int baseHp_;
     int baseAtk_;
     int baseDef_;
+
     int curHp_;
     int atk_;
     int def_;
+
     int level_;
     EnemyTier tier_;
 };

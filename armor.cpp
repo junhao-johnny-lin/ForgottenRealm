@@ -1,24 +1,31 @@
-// FILE: src/Armor.cpp
 #include "Armor.h"
-#include <sstream>
 
 namespace Adventure {
 
-Armor::Armor() : Item(), defense_(0), durability_(10) { type_ = ItemType::Armor; }
+Armor::Armor()
+    : Item(0, "Unnamed Armor", ItemRarity::Common),
+      defense_(1), durability_(100) {}
+
 Armor::Armor(int id, std::string name, int def, int dur, ItemRarity r, std::vector<ClassType> allowed)
-    : Item(id, std::move(name), ItemType::Armor, r), defense_(def), durability_(dur), allowedClasses_(std::move(allowed)) {}
-Armor::Armor(const Armor& other)
-    : Item(other.id_, other.name_, other.type_, other.rarity_), defense_(other.defense_), durability_(other.durability_), allowedClasses_(other.allowedClasses_) {}
+    : Item(id, name, r),
+      defense_(def), durability_(dur),
+      allowedClasses_(std::move(allowed)) {}
+
+// ➕ ADD THIS (used by SaveSystem)
+Armor::Armor(std::string name, int def, ItemRarity r)
+    : Item(0, name, r),
+      defense_(def),
+      durability_(100),
+      allowedClasses_({})
+{}
+
+Armor::Armor(const Armor& other) = default;
 Armor::~Armor() = default;
 
-std::string Armor::use() {
-    std::ostringstream ss;
-    ss << "Equipped " << name_ << " (DEF " << defense_ << ")";
-    return ss.str();
-}
+std::string Armor::use() { return "Clink!"; }
 int Armor::defense() const { return defense_; }
 int Armor::durability() const { return durability_; }
-void Armor::takeHit(int amount) { durability_ -= amount; if (durability_ < 0) durability_ = 0; }
+void Armor::takeHit(int amount) { durability_ -= amount; }
 const std::vector<ClassType>& Armor::allowedClasses() const { return allowedClasses_; }
 
-} // namespace Adventure
+}

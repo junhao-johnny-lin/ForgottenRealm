@@ -1,4 +1,3 @@
-// FILE: include/Player_1_2.h
 #pragma once
 #include "Entity.h"
 #include "Item.h"
@@ -22,6 +21,7 @@ public:
 
     void update() override {}
 
+    // basic info
     const std::string& name() const;
 
     // stats
@@ -33,7 +33,7 @@ public:
     int exp() const;
     int nextLevelExp() const;
 
-    // classes
+    // class progression
     ClassType baseClass() const;
     ClassType advancedClass() const;
     ClassType ultimateClass() const;
@@ -43,7 +43,7 @@ public:
     void unlockUltimate(ClassType c);
     void unlockHidden(ClassType c);
 
-    // save overrides
+    // save/load helpers (used by SaveSystem)
     void overrideName(const std::string& nm);
     void overrideLevel(int lvl);
     void overrideExp(int xp);
@@ -85,6 +85,9 @@ public:
     int day() const;
     void setDay(int d);
 
+    // apply achievement rewards (simple hook)
+    void applyAchievementBonus(const Skill& bonusSkill);
+
 private:
     std::string name_;
     int hp_, maxHp_;
@@ -102,6 +105,7 @@ private:
     std::shared_ptr<Armor> armor_;
     std::vector<std::shared_ptr<Item>> inventory_;
 
+    // skills learned by id
     std::map<std::string, Skill> learnedSkills_;
 };
 

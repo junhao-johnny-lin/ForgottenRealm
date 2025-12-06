@@ -1,4 +1,3 @@
-// FILE: include/Armor.h
 #pragma once
 #include "Item.h"
 #include "Enums.h"
@@ -11,6 +10,10 @@ class Armor : public Item {
 public:
     Armor();
     Armor(int id, std::string name, int def, int dur, ItemRarity r, std::vector<ClassType> allowed);
+
+    // ➕ ADD THIS (needed for save/load)
+    Armor(std::string name, int def, ItemRarity r);
+
     Armor(const Armor& other);
     ~Armor() override;
 

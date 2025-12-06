@@ -1,4 +1,3 @@
-// FILE: src/Player_1_2.cpp
 #include "Player_1_2.h"
 #include "Skills_1_2.h"
 #include <iostream>
@@ -32,7 +31,7 @@ int Player::atk() const { return baseAtk_ + (weapon_ ? weapon_->damage() : 0); }
 int Player::def() const { return baseDef_ + (armor_ ? armor_->defense() : 0); }
 int Player::level() const { return level_; }
 int Player::exp() const { return exp_; }
-int Player::nextLevelExp() const { return 50 + level_*25; }
+int Player::nextLevelExp() const { return 50 + level_ * 25; }
 
 ClassType Player::baseClass() const { return baseClass_; }
 ClassType Player::advancedClass() const { return advClass_; }
@@ -61,6 +60,7 @@ void Player::heal(int amount) {
     hp_ += amount;
     if (hp_ > maxHp_) hp_ = maxHp_;
 }
+
 bool Player::isAlive() const { return hp_ > 0; }
 
 void Player::gainExp(int amount) {
@@ -87,22 +87,26 @@ const std::vector<std::shared_ptr<Item>>& Player::inventory() const { return inv
 bool Player::canEquip(const Item& it) const {
     if (it.type() == ItemType::Weapon) {
         const Weapon& w = dynamic_cast<const Weapon&>(it);
-        for (auto c : w.allowedClasses()) if (c == baseClass_ || c == advClass_ || c == ultClass_ || c == hidClass_) return true;
+        const auto& list = w.allowedClasses();
+        for (auto c : list) if (c == baseClass_ || c == advClass_ || c == ultClass_ || c == hidClass_) return true;
         return false;
     }
     if (it.type() == ItemType::Armor) {
         const Armor& a = dynamic_cast<const Armor&>(it);
-        for (auto c : a.allowedClasses()) if (c == baseClass_ || c == advClass_ || c == ultClass_ || c == hidClass_) return true;
+        const auto& list = a.allowedClasses();
+        for (auto c : list) if (c == baseClass_ || c == advClass_ || c == ultClass_ || c == hidClass_) return true;
         return false;
     }
     return true;
 }
 
 void Player::equipWeapon(std::shared_ptr<Weapon> w) {
+    if (!w) return;
     if (!canEquip(*w)) throw std::runtime_error("Cannot equip weapon");
     weapon_ = w;
 }
 void Player::equipArmor(std::shared_ptr<Armor> a) {
+    if (!a) return;
     if (!canEquip(*a)) throw std::runtime_error("Cannot equip armor");
     armor_ = a;
 }
@@ -137,5 +141,14 @@ bool Player::consumeSkillPoints(int sp) { if (skillPoints_ < sp) return false; s
 
 int Player::day() const { return days_; }
 void Player::setDay(int d) { days_ = d; }
+
+void Player::applyAchievementBonus(const Skill& bonusSkill) {
+    // Simple implementation: grant the skill if possible; if already present, give 1 skill point
+    if (!hasSkill(bonusSkill.id)) {
+        learnedSkills_[bonusSkill.id] = bonusSkill;
+    } else {
+        addSkillPoints(1);
+    }
+}
 
 } // namespace Adventure
